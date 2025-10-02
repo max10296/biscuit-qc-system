@@ -1,0 +1,1 @@
+{"timestamp":"2025-10-02T15:40:01.395Z","level":"INFO","service":"biscuit-qc","message":"Application starting","nodeVersion":"v20.19.5","platform":"linux","pid":6011,"config":{"port":3000,"database":"configured"}}

@@ -8,6 +8,8 @@ require('dotenv').config();
 
 const db = require('./config/database');
 const apiRoutes = require('./routes/api');
+const { securityMiddleware, rateLimitMiddleware } = require('./middleware/validation');
+const { logger } = require('./utils/logger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,6 +38,16 @@ app.use(cors({ origin: allowedOrigins, credentials: true }));
 // Body parsing middleware
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+
+// Security and validation middleware
+app.use(securityMiddleware);
+app.use('/api/', rateLimitMiddleware({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: process.env.NODE_ENV === 'development' ? 1000 : 100
+}));
+
+// Request logging middleware
+app.use(logger.requestLogger());
 
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -71,8 +83,19 @@ app.get('/health/db', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: 'Internal server error', message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong' });
+  logger.error('Express error handler', {
+    error: err,
+    url: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
+  });
+  
+  res.status(500).json({ 
+    error: 'Internal server error', 
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
+    requestId: req.headers['x-request-id']
+  });
 });
 
 // 404 handler
@@ -83,17 +106,25 @@ app.use((req, res) => {
 // Initialize database and start server
 async function startServer() {
   try {
+    // Log application startup
+    logger.logStartup({
+      port: PORT,
+      database: true
+    });
+    
     await db.initialize();
-    console.log('Database initialized successfully');
+    logger.info('Database initialized successfully');
+    
     app.listen(PORT, () => {
-      console.log(`Biscuit QC Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
-      console.log(`Health check: http://localhost:${PORT}/health`);
-      console.log(`Database health: http://localhost:${PORT}/health/db`);
-      console.log(`Main application: http://localhost:${PORT}/`);
+      logger.info(`Biscuit QC Server running on port ${PORT}`, {
+        environment: process.env.NODE_ENV,
+        healthCheck: `http://localhost:${PORT}/health`,
+        databaseHealth: `http://localhost:${PORT}/health/db`,
+        mainApplication: `http://localhost:${PORT}/`
+      });
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    logger.error('Failed to start server', { error });
     process.exit(1);
   }
 }
@@ -102,13 +133,25 @@ startServer();
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\nReceived SIGINT, shutting down gracefully...');
-  await db.close();
-  process.exit(0);
+  logger.info('Received SIGINT, shutting down gracefully...');
+  try {
+    await db.close();
+    logger.info('Database connections closed');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown', { error });
+    process.exit(1);
+  }
 });
 
 process.on('SIGTERM', async () => {
-  console.log('\nReceived SIGTERM, shutting down gracefully...');
-  await db.close();
-  process.exit(0);
+  logger.info('Received SIGTERM, shutting down gracefully...');
+  try {
+    await db.close();
+    logger.info('Database connections closed');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown', { error });
+    process.exit(1);
+  }
 });

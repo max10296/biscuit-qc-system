@@ -681,10 +681,90 @@ router.post('/sessions', asyncHandler(async (req, res) => {
 }));
 
 // ================================================================
-// STATISTICS API ROUTES
+// ENHANCED ANALYTICS & REPORTING API ROUTES
 // ================================================================
 
-// GET /api/statistics - Get system statistics
+// GET /api/analytics/reports - Get comprehensive report analytics
+router.get('/analytics/reports', asyncHandler(async (req, res) => {
+  const { start_date, end_date, product_id, status, shift, group_by = 'day' } = req.query;
+  
+  const analytics = await db.getReportAnalytics({
+    startDate: start_date,
+    endDate: end_date,
+    productId: product_id,
+    status,
+    shift
+  });
+  
+  res.json(analytics);
+}));
+
+// GET /api/analytics/dashboard - Get dashboard data
+router.get('/analytics/dashboard', asyncHandler(async (req, res) => {
+  const { start_date, end_date, product_id } = req.query;
+  
+  const result = await db.query(`
+    SELECT get_dashboard_data($1, $2, $3) as dashboard_data
+  `, [start_date || null, end_date || null, product_id || null]);
+  
+  res.json(result.rows[0].dashboard_data);
+}));
+
+// GET /api/analytics/performance - Get performance metrics
+router.get('/analytics/performance', asyncHandler(async (req, res) => {
+  const { metric_category, start_date, end_date, product_id } = req.query;
+  
+  let query = `
+    SELECT 
+      metric_name,
+      metric_category,
+      metric_value,
+      target_value,
+      unit,
+      measurement_date,
+      CASE 
+        WHEN target_value IS NOT NULL THEN 
+          CASE 
+            WHEN metric_value >= target_value THEN 'meeting_target'
+            WHEN metric_value >= target_value * 0.9 THEN 'approaching_target'
+            ELSE 'below_target'
+          END
+        ELSE 'no_target'
+      END as status
+    FROM performance_metrics
+    WHERE 1=1
+  `;
+  
+  const params = [];
+  let paramIndex = 1;
+  
+  if (metric_category) {
+    query += ` AND metric_category = $${paramIndex++}`;
+    params.push(metric_category);
+  }
+  
+  if (start_date) {
+    query += ` AND measurement_date >= $${paramIndex++}`;
+    params.push(start_date);
+  }
+  
+  if (end_date) {
+    query += ` AND measurement_date <= $${paramIndex++}`;
+    params.push(end_date);
+  }
+  
+  if (product_id) {
+    query += ` AND product_id = $${paramIndex++}`;
+    params.push(product_id);
+  }
+  
+  query += ` ORDER BY measurement_date DESC, metric_name`;
+  
+  const result = await db.query(query, params);
+  res.json({ data: result.rows });
+}));
+
+// GET /api/statistics - Get system statistics (legacy compatibility)
 router.get('/statistics', asyncHandler(async (req, res) => {
   const { start_date, end_date, product_id } = req.query;
   
@@ -693,6 +773,237 @@ router.get('/statistics', asyncHandler(async (req, res) => {
   `, [start_date || null, end_date || null, product_id || null]);
   
   res.json(result.rows[0].stats);
+}));
+
+// ================================================================
+// DATA EXPORT API ROUTES
+// ================================================================
+
+// GET /api/export/reports - Export reports data
+router.get('/export/reports', asyncHandler(async (req, res) => {
+  const { format = 'json', start_date, end_date, product_id, status } = req.query;
+  
+  const filters = {};
+  if (start_date) filters.report_date = `>= '${start_date}'`;
+  if (end_date) filters.report_date = `<= '${end_date}'`;
+  if (product_id) filters.product_id = product_id;
+  if (status) filters.status = status;
+  
+  const exportResult = await db.exportData('reports', filters, format);
+  
+  // Log export activity
+  await db.query(`
+    INSERT INTO data_exports (
+      export_type, export_format, export_parameters, 
+      record_count, exported_by, file_name
+    ) VALUES ($1, $2, $3, $4, $5, $6)
+  `, [
+    'reports',
+    format,
+    JSON.stringify(req.query),
+    exportResult.recordCount,
+    req.headers['x-user-id'] || 'anonymous',
+    `reports_export_${new Date().toISOString().split('T')[0]}.${format}`
+  ]);
+  
+  res.json(exportResult);
+}));
+
+// GET /api/export/products - Export products data
+router.get('/export/products', asyncHandler(async (req, res) => {
+  const { format = 'json', active } = req.query;
+  
+  const filters = {};
+  if (active !== undefined) filters.is_active = active === 'true';
+  
+  const exportResult = await db.exportData('products', filters, format);
+  
+  // Log export activity
+  await db.query(`
+    INSERT INTO data_exports (
+      export_type, export_format, export_parameters, 
+      record_count, exported_by, file_name
+    ) VALUES ($1, $2, $3, $4, $5, $6)
+  `, [
+    'products',
+    format,
+    JSON.stringify(req.query),
+    exportResult.recordCount,
+    req.headers['x-user-id'] || 'anonymous',
+    `products_export_${new Date().toISOString().split('T')[0]}.${format}`
+  ]);
+  
+  res.json(exportResult);
+}));
+
+// GET /api/export/history - Get export history
+router.get('/export/history', asyncHandler(async (req, res) => {
+  const { limit = 50, offset = 0 } = req.query;
+  
+  const exports = await db.findWhere(
+    'data_exports', 
+    {}, 
+    'export_date DESC', 
+    parseInt(limit), 
+    parseInt(offset)
+  );
+  
+  const total = await db.count('data_exports');
+  
+  res.json({
+    data: exports,
+    pagination: {
+      total,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      count: exports.length
+    }
+  });
+}));
+
+// ================================================================
+// ADVANCED SEARCH API ROUTES
+// ================================================================
+
+// GET /api/search - Advanced search across multiple tables
+router.get('/search', asyncHandler(async (req, res) => {
+  const { q: query, tables, limit = 50, offset = 0 } = req.query;
+  
+  if (!query || query.length < 3) {
+    return res.status(400).json({
+      error: 'Query parameter is required and must be at least 3 characters long'
+    });
+  }
+  
+  const searchParams = {
+    query,
+    tables: tables ? tables.split(',') : ['reports', 'products'],
+    limit: parseInt(limit),
+    offset: parseInt(offset)
+  };
+  
+  const results = await db.advancedSearch(searchParams);
+  res.json(results);
+}));
+
+// ================================================================
+// NOTIFICATIONS API ROUTES
+// ================================================================
+
+// GET /api/notifications - Get notifications
+router.get('/notifications', asyncHandler(async (req, res) => {
+  const { unread_only = false, limit = 20, offset = 0, severity } = req.query;
+  
+  let conditions = {};
+  if (unread_only === 'true') conditions.is_read = false;
+  if (severity) conditions.severity = severity;
+  
+  // Add expiration filter
+  const query = `
+    SELECT * FROM notifications n
+    WHERE (n.expires_at IS NULL OR n.expires_at > CURRENT_TIMESTAMP)
+    ${unread_only === 'true' ? 'AND n.is_read = false' : ''}
+    ${severity ? `AND n.severity = '${severity}'` : ''}
+    ORDER BY n.created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+  
+  const result = await db.query(query);
+  res.json({ data: result.rows });
+}));
+
+// POST /api/notifications - Create notification
+router.post('/notifications', asyncHandler(async (req, res) => {
+  const { 
+    notification_type, title, message, severity = 'info',
+    target_users = [], related_entity, related_id, expires_hours = 720
+  } = req.body;
+  
+  if (!notification_type || !title || !message) {
+    return res.status(400).json({
+      error: 'notification_type, title, and message are required'
+    });
+  }
+  
+  const result = await db.query(`
+    SELECT create_notification($1, $2, $3, $4, $5, $6, $7, $8) as notification_id
+  `, [
+    notification_type,
+    title,
+    message,
+    severity,
+    JSON.stringify(target_users),
+    related_entity,
+    related_id,
+    expires_hours
+  ]);
+  
+  const created = await db.findById('notifications', result.rows[0].notification_id);
+  res.status(201).json(created);
+}));
+
+// PUT /api/notifications/:id/read - Mark notification as read
+router.put('/notifications/:id/read', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  if (!validateUUID(id)) {
+    return res.status(400).json({ error: 'Invalid notification ID' });
+  }
+  
+  const updated = await db.updateById('notifications', id, {
+    is_read: true,
+    acknowledged_by: req.headers['x-user-id'] || 'anonymous',
+    acknowledged_at: new Date()
+  });
+  
+  if (!updated) {
+    return res.status(404).json({ error: 'Notification not found' });
+  }
+  
+  res.json(updated);
+}));
+
+// ================================================================
+// SYSTEM MONITORING API ROUTES
+// ================================================================
+
+// GET /api/system/performance - Get system performance metrics
+router.get('/system/performance', asyncHandler(async (req, res) => {
+  const metrics = await db.getPerformanceMetrics();
+  res.json(metrics);
+}));
+
+// POST /api/system/maintenance - Trigger database maintenance
+router.post('/system/maintenance', asyncHandler(async (req, res) => {
+  const result = await db.performMaintenance();
+  res.json(result);
+}));
+
+// GET /api/system/backup - Get backup metadata
+router.get('/system/backup', asyncHandler(async (req, res) => {
+  const { limit = 10, offset = 0 } = req.query;
+  
+  const backups = await db.findWhere(
+    'backup_metadata',
+    {},
+    'backup_started DESC',
+    parseInt(limit),
+    parseInt(offset)
+  );
+  
+  res.json({ data: backups });
+}));
+
+// POST /api/system/backup - Create backup
+router.post('/system/backup', asyncHandler(async (req, res) => {
+  const { backup_type = 'full', backup_name, retention_days = 30 } = req.body;
+  
+  const result = await db.query(`
+    SELECT create_data_backup($1, $2, $3) as backup_id
+  `, [backup_type, backup_name, retention_days]);
+  
+  const created = await db.findById('backup_metadata', result.rows[0].backup_id);
+  res.status(201).json(created);
 }));
 
 // GET /api/health - Health check endpoint
