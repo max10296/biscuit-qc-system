@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/reports.css?v=1">
+  <link rel="icon" href="data:image/png;base64,iVBORw0KGgo=">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="bg-white shadow-sm sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="px-3 py-2 border rounded hover:bg-gray-100"><i class="fas fa-arrow-left mr-1"></i> Back to Form</a>
+        <h1 class="text-2xl font-semibold">Saved Reports</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-reset" class="px-3 py-2 border rounded hover:bg-gray-100" title="Reset filters"><i class="fas fa-undo"></i> Reset</button>
+        <button id="btn-refresh" class="px-3 py-2 border rounded hover:bg-gray-100"><i class="fas fa-rotate"></i> Refresh</button>
+        <button id="btn-export-csv" class="px-3 py-2 border rounded hover:bg-gray-100"><i class="fas fa-file-csv"></i> CSV</button>
+        <button id="btn-export-pdf" class="px-3 py-2 border rounded hover:bg-gray-100"><i class="fas fa-file-pdf"></i> PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4">
+    <section class="bg-white border rounded p-3 mb-4">
+      <div class="grid md:grid-cols-5 gap-3 items-end">
+        <div class="md:col-span-2">
+          <label class="text-sm text-gray-600">Search</label>
+          <input id="search" type="text" class="w-full border rounded px-2 py-1" placeholder="Search product, batch, notes..."/>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600">Status</label>
+          <select id="filter-status" class="w-full border rounded px-2 py-1">
+            <option value="">All</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="submitted">Submitted</option>
+            <option value="draft">Draft</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600">Shift</label>
+          <select id="filter-shift" class="w-full border rounded px-2 py-1">
+            <option value="">All</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <label class="text-sm text-gray-600">From</label>
+            <input id="date-from" type="date" class="w-full border rounded px-2 py-1" />
+          </div>
+          <div class="flex-1">
+            <label class="text-sm text-gray-600">To</label>
+            <input id="date-to" type="date" class="w-full border rounded px-2 py-1" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid md:grid-cols-4 gap-3 mb-4">
+      <div class="kpi-card"><div class="kpi-label">Total</div><div class="kpi-value" id="kpi-total">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Approved</div><div class="kpi-value" id="kpi-approved">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Rejected</div><div class="kpi-value" id="kpi-rejected">-</div></div>
+      <div class="kpi-card"><div class="kpi-label">Avg Score</div><div class="kpi-value" id="kpi-avg-score">-</div></div>
+    </section>
+
+    <section class="bg-white border rounded p-3 mb-4">
+      <div class="table-toolbar mb-2">
+        <span id="pagination-info" class="text-sm text-gray-600"></span>
+        <div class="ml-auto flex gap-2">
+          <button id="prev-page" class="px-2 py-1 border rounded">Prev</button>
+          <button id="next-page" class="px-2 py-1 border rounded">Next</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="grid w-full" id="reports-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Batch</th>
+              <th>Date</th>
+              <th>Shift</th>
+              <th>Status</th>
+              <th>Score</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white border rounded p-3">
+        <h3 class="font-semibold mb-2">Reports by Status</h3>
+        <div class="chart-container"><canvas id="chart-status"></canvas></div>
+      </div>
+      <div class="bg-white border rounded p-3">
+        <h3 class="font-semibold mb-2">Average Score by Product</h3>
+        <div class="chart-container"><canvas id="chart-score"></canvas></div>
+      </div>
+      <div class="bg-white border rounded p-3">
+        <h3 class="font-semibold mb-2">Defects by Product</h3>
+        <div class="chart-container"><canvas id="chart-defects"></canvas></div>
+      </div>
+      <div class="bg-white border rounded p-3">
+        <h3 class="font-semibold mb-2">Reports by Shift</h3>
+        <div class="chart-container"><canvas id="chart-shift"></canvas></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- JSON Modal -->
+  <div id="json-modal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded shadow-lg max-w-3xl w-full">
+      <div class="flex items-center justify-between border-b p-2">
+        <h3 class="font-semibold">Report JSON</h3>
+        <div class="flex items-center gap-2">
+          <button id="json-download" class="px-2 py-1 border rounded text-sm hover:bg-gray-100"><i class="fas fa-download mr-1"></i>Download</button>
+          <button id="json-close" class="text-gray-600 hover:text-black" title="Close"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <pre id="json-pre" class="p-3 text-xs overflow-auto" style="max-height:60vh;"></pre>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      const modal = document.getElementById('json-modal');
+      const close = document.getElementById('json-close');
+      const downloadBtn = document.getElementById('json-download');
+      close.addEventListener('click', ()=> modal.classList.add('hidden'));
+      modal.addEventListener('click', (e)=>{ if(e.target===modal) modal.classList.add('hidden'); });
+      downloadBtn.addEventListener('click', ()=>{
+        const pre = document.getElementById('json-pre');
+        const blob = new Blob([pre.textContent||'{}'], {type:'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = 'report.json'; a.click();
+        setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
+      });
+    });
+  </script>
+  <script>
+    // Bootstrap localStorage records into the dashboard (no-op if API works)
+    (function(){
+      try{
+        const seed = localStorage.getItem('reportsLocal');
+        if(!seed){ localStorage.setItem('reportsLocal','[]'); }
+      }catch(_){ /* ignore */ }
+    })();
+  </script>
+  <script src="js/utils.js" defer></script>
+  <script src="js/reports.js" defer></script>
+</body>
+</html>

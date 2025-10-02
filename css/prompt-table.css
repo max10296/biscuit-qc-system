@@ -1,0 +1,20 @@
+/* Prompt Table UI */
+:root { --ring: #4f46e5; --muted: #6b7280; --bg: #f9fafb; --danger: #ef4444; --ok: #10b981; }
+body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+.table-card { border: 1px solid #e5e7eb; border-radius: .5rem; overflow: hidden; background: #fff; }
+.table-card header { display:flex; justify-content:space-between; align-items:center; padding:.75rem 1rem; background: linear-gradient(to bottom, #f9fafb,#fff); border-bottom:1px solid #e5e7eb; }
+.table-card header h3 { font-weight:600; }
+.table-toolbar { display:flex; gap:.5rem; align-items:center; }
+.table-toolbar button { border:1px solid #e5e7eb; padding:.375rem .625rem; border-radius:.375rem; background:#fff; font-size:.875rem; }
+.table-toolbar button:hover { background:#f3f4f6; }
+.grid { width:100%; border-collapse:separate; border-spacing:0; }
+.grid th, .grid td { border-bottom:1px solid #e5e7eb; padding:.5rem .625rem; font-size:.875rem; }
+.grid th { background:#f9fafb; text-align:left; }
+.grid tr:hover td { background:#fafafa; }
+.grid input, .grid select { width:100%; border:1px solid #e5e7eb; border-radius:.375rem; padding:.375rem .5rem; font-size:.875rem; }
+.grid input:focus, .grid select:focus { outline:2px solid transparent; box-shadow:0 0 0 2px var(--ring); }
+.badge { font-size:.75rem; padding:.125rem .375rem; border-radius:.375rem; border:1px solid #e5e7eb; color: var(--muted); }
+.ref-pill { display:inline-flex; align-items:center; gap:.25rem; background:#eef2ff; color:#3730a3; border-radius:999px; padding:.125rem .5rem; font-size:.75rem; }
+.cond-bad { background:#fef2f2; color:#991b1b; }
+.cond-ok { background:#ecfdf5; color:#065f46; }
+.footer-note { color:#6b7280; font-size:.75rem; padding:.5rem 1rem; }
