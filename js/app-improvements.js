@@ -381,8 +381,9 @@
         addBreadcrumbs();
         
         // Add scroll to top button
-        addScrollToTop();
-        
+        // NOTE: This functionality is handled by enhanceScrollingExperience() in js/ui-enhancements.js
+        // addScrollToTop(); // COMMENTED OUT: This function call caused an Uncaught ReferenceError as it is not defined here.
+
         // Improve tab navigation
         improveTabNavigation();
     }

@@ -25,6 +25,12 @@ DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS sessions CASCADE;
 DROP TABLE IF EXISTS settings CASCADE;
 DROP TABLE IF EXISTS signatures CASCADE;
+DROP TABLE IF EXISTS report_aggregates CASCADE;
+DROP TABLE IF EXISTS performance_metrics CASCADE;
+DROP TABLE IF EXISTS data_exports CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS backup_metadata CASCADE;
+
 
 -- ================================================================
 -- CORE TABLES
@@ -156,7 +162,7 @@ CREATE TABLE report_parameters (
     time_slot VARCHAR(20), -- for hourly data (e.g., "08:00", "09:00")
     column_index INTEGER, -- for table-based parameters
     row_index INTEGER, -- for multi-row data
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Report pallets (pallet tracking data)
@@ -310,7 +316,8 @@ CREATE INDEX idx_report_signatures_type ON report_signatures(signature_type);
 CREATE INDEX idx_sessions_session_key ON sessions(session_key);
 CREATE INDEX idx_sessions_user_id ON sessions(user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
-CREATE INDEX idx_sessions_cleanup ON sessions(expires_at) WHERE expires_at < CURRENT_TIMESTAMP;
+-- CORRECTED: Removed the problematic WHERE clause
+CREATE INDEX idx_sessions_cleanup ON sessions(expires_at);
 
 -- Settings indexes
 CREATE INDEX idx_settings_key ON settings(key);
@@ -392,7 +399,7 @@ BEGIN
     ELSE -- UPDATE
         old_data = to_jsonb(OLD);
         new_data = to_jsonb(NEW);
-        
+
         -- Find changed fields
         FOR field_name IN SELECT jsonb_object_keys(new_data)
         LOOP
@@ -404,11 +411,11 @@ BEGIN
 
     -- Insert audit record
     INSERT INTO audit_log (
-        table_name, 
-        record_id, 
-        operation, 
-        old_values, 
-        new_values, 
+        table_name,
+        record_id,
+        operation,
+        old_values,
+        new_values,
         changed_fields,
         user_id,
         timestamp
@@ -467,7 +474,7 @@ BEGIN
     SELECT COUNT(*)
     INTO passed_parameters
     FROM report_parameters
-    WHERE report_id = report_uuid 
+    WHERE report_id = report_uuid
       AND numeric_value IS NOT NULL
       AND numeric_value >= 0; -- Adjust criteria as needed
 
@@ -548,7 +555,7 @@ DECLARE
     rejected_reports INTEGER;
     avg_score DECIMAL(5,2);
 BEGIN
-    SELECT 
+    SELECT
         COUNT(*),
         COUNT(*) FILTER (WHERE status = 'approved'),
         COUNT(*) FILTER (WHERE status = 'rejected'),
@@ -565,7 +572,7 @@ BEGIN
         'rejectedReports', rejected_reports,
         'pendingReports', total_reports - approved_reports - rejected_reports,
         'averageScore', COALESCE(avg_score, 0),
-        'approvalRate', CASE WHEN total_reports > 0 THEN 
+        'approvalRate', CASE WHEN total_reports > 0 THEN
             ROUND((approved_reports::DECIMAL / total_reports::DECIMAL) * 100, 2)
             ELSE 0 END
     );
@@ -637,18 +644,18 @@ BEGIN
     -- Clean expired sessions
     SELECT cleanup_expired_sessions() INTO cleaned_sessions;
     result := result || format('Cleaned %s expired sessions. ', cleaned_sessions);
-    
+
     -- Clean old audit records (older than retention period)
-    DELETE FROM audit_log 
-    WHERE timestamp < CURRENT_TIMESTAMP - INTERVAL '1 day' * 
+    DELETE FROM audit_log
+    WHERE timestamp < CURRENT_TIMESTAMP - INTERVAL '1 day' *
         COALESCE((SELECT (value)::INTEGER FROM settings WHERE key = 'audit_retention_days'), 365);
     GET DIAGNOSTICS old_audit_records = ROW_COUNT;
     result := result || format('Cleaned %s old audit records. ', old_audit_records);
-    
+
     -- Update statistics
     ANALYZE products, reports, report_parameters, signatures, sessions, settings;
     result := result || 'Updated table statistics. ';
-    
+
     RETURN result || format('Maintenance completed at %s.', CURRENT_TIMESTAMP);
 END;
 $$ LANGUAGE plpgsql;
@@ -658,35 +665,6 @@ CREATE INDEX idx_products_custom_vars_gin ON product_custom_variables USING gin(
 CREATE INDEX idx_reports_form_data_gin ON reports USING gin(form_data);
 CREATE INDEX idx_reports_calculations_gin ON reports USING gin(calculations);
 CREATE INDEX idx_settings_value_gin ON settings USING gin(value);
-
--- ================================================================
--- PERMISSIONS AND SECURITY
--- ================================================================
-
--- Create roles for different user types
--- Note: These should be run by a database administrator
-/*
-CREATE ROLE biscuit_qc_admin;
-CREATE ROLE biscuit_qc_user;
-CREATE ROLE biscuit_qc_readonly;
-
--- Admin permissions (full access)
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO biscuit_qc_admin;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO biscuit_qc_admin;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO biscuit_qc_admin;
-
--- User permissions (read/write on most tables, limited admin functions)
-GRANT SELECT, INSERT, UPDATE ON products, reports, report_sections, report_parameters, 
-      report_pallets, report_signatures, sessions TO biscuit_qc_user;
-GRANT SELECT ON signatures, settings TO biscuit_qc_user;
-GRANT DELETE ON reports, report_sections, report_parameters, report_pallets, 
-      report_signatures, sessions TO biscuit_qc_user;
-GRANT EXECUTE ON FUNCTION calculate_report_score, get_product_configuration TO biscuit_qc_user;
-
--- Read-only permissions
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO biscuit_qc_readonly;
-GRANT EXECUTE ON FUNCTION get_report_statistics, get_product_configuration TO biscuit_qc_readonly;
-*/
 
 -- ================================================================
 -- COMMENTS AND DOCUMENTATION
@@ -705,57 +683,6 @@ COMMENT ON TABLE report_signatures IS 'Applied signatures for report approval wo
 COMMENT ON TABLE sessions IS 'User session management and form state persistence';
 COMMENT ON TABLE settings IS 'System configuration and user preferences';
 COMMENT ON TABLE audit_log IS 'Complete audit trail for all database changes';
-
--- ================================================================
--- FINAL NOTES
--- ================================================================
-/*
-This optimized PostgreSQL schema provides:
-
-1. PERFORMANCE OPTIMIZATIONS:
-   - Comprehensive indexing strategy for all query patterns
-   - JSONB columns with GIN indexes for flexible data storage
-   - Partitioning-ready structure for large data volumes
-   - Efficient foreign key relationships with proper cascading
-
-2. DATA INTEGRITY:
-   - Proper constraints and validation rules
-   - Referential integrity with foreign keys
-   - Check constraints for business rules
-   - Audit trail for all changes
-
-3. SCALABILITY FEATURES:
-   - UUID primary keys for distributed systems
-   - JSONB for flexible schema evolution
-   - Indexed text search capabilities
-   - Optimized for both OLTP and reporting queries
-
-4. BUSINESS LOGIC:
-   - Stored procedures for complex calculations
-   - Trigger-based audit logging
-   - Automated maintenance procedures
-   - Statistical analysis functions
-
-5. SECURITY:
-   - Role-based access control ready
-   - Audit logging with user context
-   - Session management with expiration
-   - Encrypted settings support
-
-To deploy this schema:
-1. Run this script on a PostgreSQL 12+ database
-2. Configure application connection settings
-3. Set up regular maintenance jobs
-4. Configure backup and monitoring
-5. Implement application-level security
-
-For production use:
-- Review and adjust retention policies
-- Set up automated backups
-- Monitor query performance
-- Configure connection pooling
-- Implement proper logging and monitoring
-*/
 
 -- ================================================================
 -- ADDITIONAL ENHANCED FEATURES FOR IMPROVED DATA STORAGE & REPORTING
@@ -792,8 +719,9 @@ CREATE TABLE performance_metrics (
     report_id UUID REFERENCES reports(id),
     measurement_date DATE NOT NULL,
     measurement_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- Data export logs table for tracking exports
 CREATE TABLE data_exports (
@@ -895,23 +823,23 @@ DECLARE
 BEGIN
     -- Get report details
     SELECT * INTO report_rec FROM reports WHERE id = report_uuid;
-    
+
     IF NOT FOUND THEN
         RETURN;
     END IF;
-    
+
     -- Calculate aggregation keys
     daily_key := report_rec.report_date::TEXT;
     weekly_key := date_trunc('week', report_rec.report_date)::TEXT;
     monthly_key := date_trunc('month', report_rec.report_date)::TEXT;
-    
+
     -- Update daily aggregates
     INSERT INTO report_aggregates (
         product_id, aggregation_type, aggregation_key,
         total_reports, passed_reports, failed_reports, average_score,
-        total_defects, total_inspected, pass_rate
+        total_defects, total_inspected, pass_rate, report_id
     )
-    SELECT 
+    SELECT
         product_id,
         'daily',
         daily_key,
@@ -921,12 +849,13 @@ BEGIN
         AVG(score),
         SUM(defects_count),
         SUM(total_inspected),
-        AVG(pass_rate)
-    FROM reports 
-    WHERE product_id = report_rec.product_id 
+        AVG(pass_rate),
+        report_uuid
+    FROM reports
+    WHERE product_id = report_rec.product_id
       AND report_date = report_rec.report_date
     GROUP BY product_id
-    ON CONFLICT (product_id, aggregation_type, aggregation_key) 
+    ON CONFLICT (product_id, aggregation_type, aggregation_key)
     DO UPDATE SET
         total_reports = EXCLUDED.total_reports,
         passed_reports = EXCLUDED.passed_reports,
@@ -936,10 +865,10 @@ BEGIN
         total_inspected = EXCLUDED.total_inspected,
         pass_rate = EXCLUDED.pass_rate,
         calculated_at = CURRENT_TIMESTAMP;
-        
+
     -- Similar updates for weekly and monthly (abbreviated for space)
     -- ... weekly and monthly aggregate calculations ...
-    
+
 END;
 $$ LANGUAGE plpgsql;
 
@@ -958,13 +887,13 @@ DECLARE
     metric_id UUID;
 BEGIN
     INSERT INTO performance_metrics (
-        metric_name, metric_category, metric_value, target_value, 
+        metric_name, metric_category, metric_value, target_value,
         unit, product_id, report_id, measurement_date
     ) VALUES (
         p_metric_name, p_metric_category, p_metric_value, p_target_value,
         p_unit, p_product_id, p_report_id, CURRENT_DATE
     ) RETURNING id INTO metric_id;
-    
+
     RETURN metric_id;
 END;
 $$ LANGUAGE plpgsql;
@@ -989,10 +918,10 @@ BEGIN
         related_entity, related_id, expires_at
     ) VALUES (
         p_type, p_title, p_message, p_severity, p_target_users,
-        p_related_entity, p_related_id, 
+        p_related_entity, p_related_id,
         CURRENT_TIMESTAMP + INTERVAL '1 hour' * p_expires_hours
     ) RETURNING id INTO notification_id;
-    
+
     RETURN notification_id;
 END;
 $$ LANGUAGE plpgsql;
@@ -1014,10 +943,10 @@ BEGIN
     -- Set default dates if not provided
     p_start_date := COALESCE(p_start_date, CURRENT_DATE - INTERVAL '30 days');
     p_end_date := COALESCE(p_end_date, CURRENT_DATE);
-    
+
     -- Get basic statistics
     SELECT get_report_statistics(p_start_date, p_end_date, p_product_id) INTO stats_data;
-    
+
     -- Get recent reports
     SELECT jsonb_agg(
         jsonb_build_object(
@@ -1032,13 +961,13 @@ BEGIN
         )
     ) INTO recent_reports
     FROM (
-        SELECT * FROM reports 
+        SELECT * FROM reports
         WHERE (p_product_id IS NULL OR product_id = p_product_id)
           AND report_date BETWEEN p_start_date AND p_end_date
-        ORDER BY created_at DESC 
+        ORDER BY created_at DESC
         LIMIT 10
     ) r;
-    
+
     -- Get active alerts/notifications
     SELECT jsonb_agg(
         jsonb_build_object(
@@ -1051,11 +980,11 @@ BEGIN
         )
     ) INTO alerts_data
     FROM notifications n
-    WHERE NOT n.is_read 
+    WHERE NOT n.is_read
       AND n.expires_at > CURRENT_TIMESTAMP
     ORDER BY n.created_at DESC
     LIMIT 5;
-    
+
     -- Get key performance metrics
     SELECT jsonb_agg(
         jsonb_build_object(
@@ -1068,14 +997,14 @@ BEGIN
         )
     ) INTO metrics_data
     FROM (
-        SELECT DISTINCT ON (metric_name) 
+        SELECT DISTINCT ON (metric_name)
             metric_name, metric_category, metric_value, target_value, unit, measurement_date
         FROM performance_metrics
         WHERE (p_product_id IS NULL OR product_id = p_product_id)
           AND measurement_date BETWEEN p_start_date AND p_end_date
         ORDER BY metric_name, measurement_date DESC
     ) pm;
-    
+
     -- Build final result
     result := jsonb_build_object(
         'statistics', COALESCE(stats_data, '{}'::jsonb),
@@ -1084,7 +1013,7 @@ BEGIN
         'keyMetrics', COALESCE(metrics_data, '[]'::jsonb),
         'generatedAt', CURRENT_TIMESTAMP
     );
-    
+
     RETURN result;
 END;
 $$ LANGUAGE plpgsql;
@@ -1102,23 +1031,23 @@ DECLARE
 BEGIN
     -- Generate backup name if not provided
     backup_name := COALESCE(
-        p_backup_name, 
+        p_backup_name,
         'backup_' || p_backup_type || '_' || to_char(CURRENT_TIMESTAMP, 'YYYY-MM-DD_HH24-MI-SS')
     );
-    
+
     -- Insert backup metadata
     INSERT INTO backup_metadata (
-        backup_type, backup_name, backup_started, 
+        backup_type, backup_name, backup_started,
         retention_until, created_by, status
     ) VALUES (
         p_backup_type, backup_name, CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP + INTERVAL '1 day' * p_retention_days,
         current_setting('app.current_user_id', true), 'pending'
     ) RETURNING id INTO backup_id;
-    
+
     -- Note: Actual backup logic would be implemented in application layer
     -- This function just creates the metadata record
-    
+
     RETURN backup_id;
 END;
 $$ LANGUAGE plpgsql;
@@ -1136,6 +1065,9 @@ BEGIN
         PERFORM update_report_aggregates(NEW.id);
         RETURN NEW;
     ELSIF TG_OP = 'DELETE' THEN
+        -- This logic might need adjustment depending on how aggregates should reflect deletes
+        -- For now, we assume a recalculation based on one of the remaining reports of that day
+        -- A more robust solution might involve a separate function to rebuild daily aggregates
         PERFORM update_report_aggregates(OLD.id);
         RETURN OLD;
     END IF;
@@ -1163,7 +1095,7 @@ BEGIN
             NEW.id
         );
     END IF;
-    
+
     -- Track quality score metric when report is approved
     IF TG_OP = 'UPDATE' AND OLD.status != 'approved' AND NEW.status = 'approved' THEN
         PERFORM track_performance_metric(
@@ -1176,7 +1108,7 @@ BEGIN
             NEW.id
         );
     END IF;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -1190,34 +1122,20 @@ CREATE TRIGGER trigger_auto_track_report_metrics
 -- ================================================================
 
 -- Performance metrics constraints
-ALTER TABLE performance_metrics ADD CONSTRAINT chk_metric_category 
+ALTER TABLE performance_metrics ADD CONSTRAINT chk_metric_category
     CHECK (metric_category IN ('quality', 'production', 'efficiency', 'safety', 'cost'));
 
 -- Notification constraints
-ALTER TABLE notifications ADD CONSTRAINT chk_notification_severity 
+ALTER TABLE notifications ADD CONSTRAINT chk_notification_severity
     CHECK (severity IN ('info', 'warning', 'error', 'critical'));
-ALTER TABLE notifications ADD CONSTRAINT chk_notification_type 
+ALTER TABLE notifications ADD CONSTRAINT chk_notification_type
     CHECK (notification_type IN ('quality_alert', 'system_alert', 'reminder', 'maintenance', 'audit'));
 
 -- Data exports constraints
-ALTER TABLE data_exports ADD CONSTRAINT chk_export_format 
+ALTER TABLE data_exports ADD CONSTRAINT chk_export_format
     CHECK (export_format IN ('csv', 'xlsx', 'pdf', 'json', 'xml'));
-ALTER TABLE data_exports ADD CONSTRAINT chk_export_status 
+ALTER TABLE data_exports ADD CONSTRAINT chk_export_status
     CHECK (status IN ('pending', 'completed', 'failed', 'expired'));
 
 -- Schema creation completed successfully
 SELECT 'Enhanced Biscuit QC Database Schema Created Successfully!' as status;
--- ============================================
--- FIXED INDEXES FOR PostgreSQL COMPATIBILITY
--- ============================================
-
--- Report Parameters indexes
-CREATE INDEX IF NOT EXISTS idx_report_parameters_lookup 
-    ON report_parameters (report_id, section_id, parameter_id);
-
--- Performance Metrics indexes
-CREATE INDEX IF NOT EXISTS idx_performance_metric_name_date 
-    ON performance_metrics (metric_name, measurement_date);
-
-CREATE INDEX IF NOT EXISTS idx_performance_measurement_date 
-    ON performance_metrics (measurement_date);
