@@ -215,18 +215,24 @@
                 case 'basic-info':
                     content = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block font-semibold mb-1">Product ID:</label>
-                <input type="text" id="product-id" class="input-field">
-            </div>
-            <div>
-                <label class="block font-semibold mb-1">Product Name:</label>
-                <input type="text" id="product-name-modal" class="input-field">
-            </div>
-            <div>
-                <label class="block font-semibold mb-1">Standard Weight (g):</label>
-                <input type="number" id="product-standard-weight" class="input-field">
-            </div>
+<div>
+        <label class="block font-semibold mb-1">Product ID:</label>
+        <input type="text" id="product-id" class="input-field" placeholder="Unique Product Identifier">
+    </div>
+    <div>
+        <label class="block font-semibold mb-1">Product Name:</label>
+        <input type="text" id="product-name-modal" class="input-field" placeholder="Full Product Name">
+    </div>
+    
+    <div>
+        <label class="block font-semibold mb-1">Product Code:</label>
+        <input type="text" id="product-code" class="input-field" placeholder="e.g., BBS">
+    </div>
+
+    <div>
+        <label class="block font-semibold mb-1">Standard Weight (g):</label>
+        <input type="number" id="product-standard-weight" class="input-field">
+    </div>
             <div>
                 <label class="block font-semibold mb-1">Shelf Life (months):</label>
                 <input type="number" id="product-shelf-life" class="input-field" min="1">
@@ -782,7 +788,7 @@
             }
         }
 
-        initAiTableHandlers(){
+        initAiTableHandlers() {
             const input = document.getElementById('ai-table-input');
             const preview = document.getElementById('ai-table-preview');
             const debug = document.getElementById('ai-table-debug');
@@ -793,59 +799,59 @@
             const orderEl = document.getElementById('ai-table-columns-order');
             if (!input || !preview) return;
 
-            const setDebug = (msg)=>{ if (debug){ debug.innerText = typeof msg==='string'? msg : JSON.stringify(msg,null,2); } };
-            const showDebug = (v)=>{ if (debug) debug.style.display = v?'block':'none'; };
-            if (debugToggle){ debugToggle.addEventListener('change', e=> showDebug(e.target.checked)); }
+            const setDebug = (msg) => { if (debug) { debug.innerText = typeof msg === 'string' ? msg : JSON.stringify(msg, null, 2); } };
+            const showDebug = (v) => { if (debug) debug.style.display = v ? 'block' : 'none'; };
+            if (debugToggle) { debugToggle.addEventListener('change', e => showDebug(e.target.checked)); }
 
-            function tryParse(text){
-                const t = String(text||'').trim();
+            function tryParse(text) {
+                const t = String(text || '').trim();
                 if (!t) throw new Error('Empty AI table input');
-                try{ return JSON.parse(t); }catch(jsonErr){
-                    try{
-                        const fixed = t.replace(/[“”]/g,'"').replace(/[‘’]/g,"'");
-                        const wrapped = fixed.startsWith('{')||fixed.startsWith('(') ? fixed : '('+fixed+')';
-                        return new Function('return '+wrapped)();
-                    }catch(jsErr){
-                        throw new Error('Invalid JSON/JS. JSON: '+jsonErr.message+' | JS: '+jsErr.message);
+                try { return JSON.parse(t); } catch (jsonErr) {
+                    try {
+                        const fixed = t.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+                        const wrapped = fixed.startsWith('{') || fixed.startsWith('(') ? fixed : '(' + fixed + ')';
+                        return new Function('return ' + wrapped)();
+                    } catch (jsErr) {
+                        throw new Error('Invalid JSON/JS. JSON: ' + jsonErr.message + ' | JS: ' + jsErr.message);
                     }
                 }
             }
 
-            function normalizeAiTable(cfg){
+            function normalizeAiTable(cfg) {
                 const out = { ...cfg };
-                out.name = String(out.name||'AI Table').trim();
+                out.name = String(out.name || 'AI Table').trim();
                 out.type = 'ai';
-                out.headerPosition = out.headerPosition==='bottom'?'bottom':'top';
+                out.headerPosition = out.headerPosition === 'bottom' ? 'bottom' : 'top';
                 out.borders = Boolean(out.borders);
-                out.inspectionPeriod = Number.isFinite(+out.inspectionPeriod)? +out.inspectionPeriod : 60;
-                out.rows = Number.isFinite(+out.rows)? +out.rows : 0;
+                out.inspectionPeriod = Number.isFinite(+out.inspectionPeriod) ? +out.inspectionPeriod : 60;
+                out.rows = Number.isFinite(+out.rows) ? +out.rows : 0;
                 // columns
-                out.columns = Array.isArray(out.columns)? out.columns.map((c,i)=>({
-                    key: String(c.key||'col'+(i+1)).trim().toLowerCase().replace(/[^a-z0-9_]+/g,'_'),
-                    label: c.label||('Column '+(i+1)),
-                    type: c.type||'text',
-                    options: c.options||[],
+                out.columns = Array.isArray(out.columns) ? out.columns.map((c, i) => ({
+                    key: String(c.key || 'col' + (i + 1)).trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_'),
+                    label: c.label || ('Column ' + (i + 1)),
+                    type: c.type || 'text',
+                    options: c.options || [],
                     required: Boolean(c.required),
-                    placeholder: c.placeholder||'',
-                    pattern: c.pattern||'',
-                    min: c.min!=null ? +c.min : undefined,
-                    max: c.max!=null ? +c.max : undefined,
-                    step: c.step!=null ? +c.step : undefined,
-                    decimals: c.decimals!=null ? +c.decimals : undefined,
+                    placeholder: c.placeholder || '',
+                    pattern: c.pattern || '',
+                    min: c.min != null ? +c.min : undefined,
+                    max: c.max != null ? +c.max : undefined,
+                    step: c.step != null ? +c.step : undefined,
+                    decimals: c.decimals != null ? +c.decimals : undefined,
                     timeSeries: Boolean(c.timeSeries),
                     compute: c.compute, // string allowed
-                    conditional: Array.isArray(c.conditional)? c.conditional : []
+                    conditional: Array.isArray(c.conditional) ? c.conditional : []
                 })) : [];
                 // header rows
-                out.headerRows = Array.isArray(out.headerRows)? out.headerRows : [];
-                out.sections = Array.isArray(out.sections)? out.sections : [];
+                out.headerRows = Array.isArray(out.headerRows) ? out.headerRows : [];
+                out.sections = Array.isArray(out.sections) ? out.sections : [];
                 return out;
             }
 
-            function renderColumnsOrder(cfg){
+            function renderColumnsOrder(cfg) {
                 if (!orderEl) return;
                 orderEl.innerHTML = '';
-                cfg.columns.forEach(col=>{
+                cfg.columns.forEach(col => {
                     const b = document.createElement('span');
                     b.className = 'px-2 py-1 border rounded bg-gray-50';
                     b.textContent = col.label;
@@ -853,8 +859,8 @@
                 });
             }
 
-            function renderTable(cfg){
-                try{
+            function renderTable(cfg) {
+                try {
                     preview.innerHTML = '';
                     const table = document.createElement('table');
                     table.className = 'w-full text-xs border-collapse';
@@ -862,9 +868,9 @@
 
                     const thead = document.createElement('thead');
                     // headerRows (multi-row, with colspan/rowspan)
-                    (cfg.headerRows||[]).forEach(row=>{
+                    (cfg.headerRows || []).forEach(row => {
                         const tr = document.createElement('tr');
-                        row.forEach(cell=>{
+                        row.forEach(cell => {
                             const th = document.createElement('th');
                             th.textContent = cell.label || '';
                             if (cfg.borders) th.style.border = '1px solid #e5e7eb';
@@ -875,9 +881,9 @@
                         });
                         thead.appendChild(tr);
                     });
-                    if (!cfg.headerRows?.length){
+                    if (!cfg.headerRows?.length) {
                         const tr = document.createElement('tr');
-                        cfg.columns.forEach(c=>{
+                        cfg.columns.forEach(c => {
                             const th = document.createElement('th');
                             th.textContent = c.label;
                             if (cfg.borders) th.style.border = '1px solid #e5e7eb';
@@ -889,38 +895,38 @@
 
                     // Prepare compilers and conditions
                     const util = {
-                        clamp:(x,min,max)=> Math.max(min, Math.min(max, x)),
-                        round:(x,dec=3)=> Math.round((+x + Number.EPSILON) * Math.pow(10,dec))/Math.pow(10,dec),
-                        sum: arr => arr.reduce((a,b)=>a+(+b||0),0),
-                        mean: arr => arr.length ? arr.reduce((a,b)=>a+(+b||0),0)/arr.length : 0,
-                        stddev: arr => { const m = util.mean(arr); const v = arr.length ? util.mean(arr.map(x=>Math.pow((+x||0)-m,2))) : 0; return Math.sqrt(v); }
+                        clamp: (x, min, max) => Math.max(min, Math.min(max, x)),
+                        round: (x, dec = 3) => Math.round((+x + Number.EPSILON) * Math.pow(10, dec)) / Math.pow(10, dec),
+                        sum: arr => arr.reduce((a, b) => a + (+b || 0), 0),
+                        mean: arr => arr.length ? arr.reduce((a, b) => a + (+b || 0), 0) / arr.length : 0,
+                        stddev: arr => { const m = util.mean(arr); const v = arr.length ? util.mean(arr.map(x => Math.pow((+x || 0) - m, 2))) : 0; return Math.sqrt(v); }
                     };
                     const compilers = {};
-                    cfg.columns.forEach(c=>{
-                        if (c.compute && typeof c.compute === 'string'){
-                            try { compilers[c.key] = new Function('cols','row','util', 'return ('+c.compute+');'); } catch(e){ compilers[c.key] = null; }
+                    cfg.columns.forEach(c => {
+                        if (c.compute && typeof c.compute === 'string') {
+                            try { compilers[c.key] = new Function('cols', 'row', 'util', 'return (' + c.compute + ');'); } catch (e) { compilers[c.key] = null; }
                         }
-                        if (Array.isArray(c.conditional)){
-                            c.__conds = c.conditional.map(cond=>{
+                        if (Array.isArray(c.conditional)) {
+                            c.__conds = c.conditional.map(cond => {
                                 let fn = null;
-                                try { fn = new Function('value','cols','row','util','return ('+cond.when+');'); } catch(e){ fn = null; }
+                                try { fn = new Function('value', 'cols', 'row', 'util', 'return (' + cond.when + ');'); } catch (e) { fn = null; }
                                 return { fn, addClass: cond.addClass, style: cond.style };
                             });
                         } else { c.__conds = []; }
                     });
 
                     const tbody = document.createElement('tbody');
-                    const totalRows = cfg.rows || cfg.sections?.reduce((acc,s)=> acc + (+s.rows||0), 0) || 0;
-                    for (let r=0;r<totalRows;r++){
+                    const totalRows = cfg.rows || cfg.sections?.reduce((acc, s) => acc + (+s.rows || 0), 0) || 0;
+                    for (let r = 0; r < totalRows; r++) {
                         const tr = document.createElement('tr');
                         tr.dataset.rowIndex = String(r);
-                        cfg.columns.forEach(c=>{
+                        cfg.columns.forEach(c => {
                             const td = document.createElement('td');
                             td.style.padding = '6px 8px';
                             if (cfg.borders) td.style.border = '1px solid #e5e7eb';
                             const input = buildInput(c);
                             input.dataset.key = c.key;
-                            if (c.compute){
+                            if (c.compute) {
                                 input.readOnly = true;
                                 input.classList.add('computed-cell');
                                 input.style.backgroundColor = '#e0f2fe';
@@ -929,82 +935,82 @@
                             tr.appendChild(td);
                         });
                         // Row-wide input listener to recompute
-                        tr.addEventListener('input', ()=> evaluateRow(tr));
+                        tr.addEventListener('input', () => evaluateRow(tr));
                         // Initial compute
                         evaluateRow(tr);
                         tbody.appendChild(tr);
                     }
 
-                    function evaluateRow(tr){
+                    function evaluateRow(tr) {
                         const inputs = tr.querySelectorAll('input, select, textarea');
                         const cols = {};
-                        inputs.forEach(inp=>{
+                        inputs.forEach(inp => {
                             const key = inp.dataset.key; if (!key) return;
-                            let val = (inp.tagName==='SELECT')? inp.value : inp.value;
+                            let val = (inp.tagName === 'SELECT') ? inp.value : inp.value;
                             const num = parseFloat(val);
                             cols[key] = isNaN(num) ? val : num;
                         });
-                        cfg.columns.forEach(c=>{
+                        cfg.columns.forEach(c => {
                             if (!c.compute || !compilers[c.key]) return;
-                            try{
+                            try {
                                 const fn = compilers[c.key];
                                 const out = fn(cols, tr, util);
                                 const target = tr.querySelector(`[data-key="${c.key}"]`);
                                 if (!target) return;
-                                if (target.tagName==='SELECT'){
+                                if (target.tagName === 'SELECT') {
                                     target.value = String(out);
-                                } else if (target.tagName==='TEXTAREA'){
+                                } else if (target.tagName === 'TEXTAREA') {
                                     target.value = String(out);
                                 } else {
                                     target.value = String(out);
                                 }
                                 // Apply conditionals
-                                if (c.__conds && c.__conds.length){
-                                    c.__conds.forEach(rule=>{
+                                if (c.__conds && c.__conds.length) {
+                                    c.__conds.forEach(rule => {
                                         if (!rule.fn) return;
                                         let passed = false;
-                                        try { passed = !!rule.fn(out, cols, tr, util); } catch(e){ passed = false; }
-                                        if (passed){
+                                        try { passed = !!rule.fn(out, cols, tr, util); } catch (e) { passed = false; }
+                                        if (passed) {
                                             if (rule.addClass) target.classList.add(...String(rule.addClass).split(/\s+/));
-                                            if (rule.style && typeof rule.style==='object'){
-                                                Object.keys(rule.style).forEach(prop=>{ target.style[prop] = rule.style[prop]; });
+                                            if (rule.style && typeof rule.style === 'object') {
+                                                Object.keys(rule.style).forEach(prop => { target.style[prop] = rule.style[prop]; });
                                             }
                                         } else {
                                             if (rule.addClass) target.classList.remove(...String(rule.addClass).split(/\s+/));
                                         }
                                     });
                                 }
-                            }catch(e){ /* swallow row compute errors to keep UI responsive */ }
+                            } catch (e) { /* swallow row compute errors to keep UI responsive */ }
                         });
-                        if (debug && debug.style.display !== 'none'){
-                            debug.textContent = 'Row '+tr.dataset.rowIndex+': '+JSON.stringify(cols);
+                        if (debug && debug.style.display !== 'none') {
+                            debug.textContent = 'Row ' + tr.dataset.rowIndex + ': ' + JSON.stringify(cols);
                         }
                     }
 
                     table.appendChild(thead);
                     table.appendChild(tbody);
                     preview.appendChild(table);
-                    setDebug({normalized: cfg});
+                    setDebug({ normalized: cfg });
                     renderColumnsOrder(cfg);
-                }catch(e){
-                    setDebug('Render error: '+e.message);
+                } catch (e) {
+                    setDebug('Render error: ' + e.message);
                 }
             }
 
-            function buildInput(c){
+            function buildInput(c) {
                 let el;
-                switch((c.type||'text')){
+                switch ((c.type || 'text')) {
                     case 'number':
                         el = document.createElement('input');
                         el.type = 'number';
-                        if (c.min!=null) el.min = c.min;
-                        if (c.max!=null) el.max = c.max;
-                        if (c.step!=null) el.step = c.step;
+                        if (c.min != null) el.min = c.min;
+                        if (c.max != null) el.max = c.max;
+                        if (c.step != null) el.step = c.step;
                         el.className = 'border rounded px-2 py-1 w-full';
                         break;
                     case 'select':
                         el = document.createElement('select');
-                        (c.options||[]).forEach(opt=>{
+                        (c.options || []).forEach(opt => {
                             const o = document.createElement('option');
                             o.value = String(opt);
                             o.textContent = String(opt);
@@ -1027,28 +1033,99 @@
                 return el;
             }
 
-            importBtn?.addEventListener('click', ()=>{
-                try{
+            importBtn?.addEventListener('click', () => {
+                try {
                     const cfg = normalizeAiTable(tryParse(input.value));
                     renderTable(cfg);
-                }catch(e){ setDebug('Import error: '+e.message); showDebug(true); }
+                } catch (e) { setDebug('Import error: ' + e.message); showDebug(true); }
             });
 
-            exportBtn?.addEventListener('click', ()=>{
-                try{
+            exportBtn?.addEventListener('click', () => {
+                try {
                     const cfg = normalizeAiTable(tryParse(input.value));
                     const json = JSON.stringify(cfg, null, 2);
                     navigator.clipboard?.writeText(json);
                     setDebug('Exported normalized JSON to clipboard');
-                }catch(e){ setDebug('Export error: '+e.message); showDebug(true); }
+                } catch (e) { setDebug('Export error: ' + e.message); showDebug(true); }
             });
 
-            clearBtn?.addEventListener('click', ()=>{
-                input.value='';
-                preview.innerHTML='';
-                orderEl && (orderEl.innerHTML='');
+            clearBtn?.addEventListener('click', () => {
+                input.value = '';
+                preview.innerHTML = '';
+                orderEl && (orderEl.innerHTML = '');
                 setDebug('Cleared');
             });
+        }
+
+
+        saveProduct() {
+            // 1. جمع البيانات من النموذج بأسماء الواجهة الأمامية (camelCase)
+            const frontendData = {
+                product_id: document.getElementById('product-id')?.value,
+                name: document.getElementById('product-name-modal')?.value,
+                code: document.getElementById('product-code')?.value,
+                standardWeight: parseFloat(document.getElementById('product-standard-weight')?.value) || null,
+                shelfLife: parseInt(document.getElementById('product-shelf-life')?.value) || null,
+                cartonsPerPallet: parseInt(document.getElementById('product-cartons-per-pallet')?.value) || null,
+                packsPerBox: parseInt(document.getElementById('product-packs-per-box')?.value) || null,
+                boxesPerCarton: parseInt(document.getElementById('product-boxes-per-carton')?.value) || null,
+                emptyBoxWeight: parseFloat(document.getElementById('product-empty-box-weight')?.value) || null,
+                emptyCartonWeight: parseFloat(document.getElementById('product-empty-carton-weight')?.value) || null,
+                aqlLevel: document.getElementById('product-aql-level')?.value,
+                docCode: document.getElementById('product-doc-code')?.value,
+                issueNo: document.getElementById('product-issue-no')?.value,
+                reviewNo: document.getElementById('product-review-no')?.value,
+                issueDate: document.getElementById('product-issue-date')?.value,
+                reviewDate: document.getElementById('product-review-date')?.value,
+                batchCode: document.getElementById('product-batch-code')?.value, // تم تصحيح الاسم
+                dayFormat: document.getElementById('product-day-format')?.value,
+                monthFormat: document.getElementById('product-month-format')?.value,
+                notes: document.getElementById('product-notes')?.value,
+            };
+
+            // 2. تحويل الأسماء إلى snake_case لتطابق الخادم
+            const backendData = {};
+            const keyMappings = {
+                standardWeight: 'standard_weight',
+                shelfLife: 'shelf_life',
+                cartonsPerPallet: 'cartons_per_pallet',
+                packsPerBox: 'packs_per_box',
+                boxesPerCarton: 'boxes_per_carton',
+                emptyBoxWeight: 'empty_box_weight',
+                emptyCartonWeight: 'empty_carton_weight',
+                aqlLevel: 'aql_level',
+                docCode: 'doc_code',
+                issueNo: 'issue_no',
+                reviewNo: 'review_no',
+                issueDate: 'issue_date',
+                reviewDate: 'review_date',
+                batchCode: 'batch_code',
+                dayFormat: 'day_format',
+                monthFormat: 'month_format'
+            };
+
+            for (const key in frontendData) {
+                const value = frontendData[key];
+                if (value !== null && value !== undefined && value !== '') {
+                    const backendKey = keyMappings[key] || key; // استخدم الاسم المحوّل أو الاسم الأصلي إذا لم يكن في القائمة
+                    backendData[backendKey] = value;
+                }
+            }
+
+            // إضافة بيانات AI Table إذا كانت موجودة
+            try {
+                const aiTableInput = document.getElementById('ai-table-input');
+                if (aiTableInput && aiTableInput.value) {
+                    backendData.aiTableConfig = JSON.parse(aiTableInput.value);
+                }
+            } catch (e) {
+                console.error("Could not parse AI table JSON:", e);
+            }
+
+            console.log('Final data being sent to server:', backendData);
+
+            // 3. إرجاع البيانات بالأسماء الصحيحة
+            return backendData;
         }
     }
 

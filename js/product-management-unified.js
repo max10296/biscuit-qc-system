@@ -189,15 +189,15 @@
         
         // Save product from form
 saveProductFromForm: function() {
-    if (window.ProductTabsManager && typeof window.ProductTabsManager.saveProduct === 'function') {
-        const productData = window.ProductTabsManager.saveProduct();
+    // ✅ التصحيح: تم تغيير "ProductTabsManager" إلى "productTabsManager"
+    if (window.productTabsManager && typeof window.productTabsManager.saveProduct === 'function') {
+        const productData = window.productTabsManager.saveProduct();
         
         if (!productData) {
             this.showNotification('Error: Could not retrieve product data from the form.', 'error');
             return;
         }
         
-        // ✅ FIX 3: تحسين التحقق من صحة البيانات (Validation)
         // التحقق من أن حقل اسم المنتج (name) ليس فارغًا قبل الإرسال إلى API.
         if (!productData.name || productData.name.trim() === '') {
             this.showNotification('⚠️ Product Name is required to save a new product.', 'error');
@@ -208,8 +208,9 @@ saveProductFromForm: function() {
             this.saveProduct(productData); // استدعاء دالة الحفظ الرئيسية
         }
     } else {
-        console.error('ProductTabsManager or saveProduct function is missing.');
-        this.showNotification('System Error: Product form logic missing.', 'error');
+        // رسالة خطأ أوضح للمساعدة في تصحيح الأخطاء المستقبلية
+        console.error('productTabsManager or its saveProduct function is missing. Check script loading order and object name.');
+        this.showNotification('System Error: Product form logic is missing or failed to load.', 'error');
     }
 },
 
