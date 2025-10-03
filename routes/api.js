@@ -135,8 +135,47 @@ router.post('/products', asyncHandler(async (req, res) => {
     month_format = 'letter',
     description,
     notes,
+    // Additional fields from frontend
+    doc_code,
+    issue_no,
+    review_no,
+    issue_date,
+    review_date,
+    product_type = 'standard',
+    production_line,
+    packaging_type,
+    weight_tolerance_min,
+    weight_tolerance_max,
+    temperature_min,
+    temperature_max,
+    humidity_min,
+    humidity_max,
+    storage_conditions,
+    distribution_requirements,
+    visual_standards,
+    quality_parameters,
+    packaging_materials,
+    allergen_info,
+    nutritional_info,
+    manufacturing_process,
+    regulatory_compliance,
+    certifications,
+    supplier_info,
+    cost_info,
+    images,
+    documents,
+    tags,
+    metadata,
     customVariables = [],
-    sections = []
+    sections = [],
+    specifications = [],
+    qualityAttributes = [],
+    packagingDetails = [],
+    productionDetails = [],
+    rawMaterials = [],
+    testingProtocols = [],
+    productCertifications = [],
+    costBreakdown = []
   } = req.body;
   
   if (!product_id || !name || !code) {
@@ -144,30 +183,77 @@ router.post('/products', asyncHandler(async (req, res) => {
   }
   
   const result = await db.transaction(async (client) => {
-    // Insert product
+    // Check if product_id already exists
+    const existingProduct = await client.query(
+      'SELECT id FROM products WHERE product_id = $1',
+      [product_id]
+    );
+    
+    if (existingProduct.rows.length > 0) {
+      throw new Error(`Product with ID '${product_id}' already exists`);
+    }
+    
+    // Insert product with all fields
     const productResult = await client.query(`
       INSERT INTO products (
         product_id, name, code, batch_code, ingredients_type, has_cream,
         standard_weight, shelf_life, cartons_per_pallet, packs_per_box,
         boxes_per_carton, empty_box_weight, empty_carton_weight, aql_level,
-        day_format, month_format, description, notes
+        day_format, month_format, description, notes,
+        doc_code, issue_no, review_no, issue_date, review_date,
+        product_type, production_line, packaging_type,
+        weight_tolerance_min, weight_tolerance_max,
+        temperature_min, temperature_max, humidity_min, humidity_max,
+        storage_conditions, distribution_requirements,
+        visual_standards, quality_parameters, packaging_materials,
+        allergen_info, nutritional_info, manufacturing_process,
+        regulatory_compliance, certifications, supplier_info,
+        cost_info, images, documents, tags, metadata
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
-      ) RETURNING id
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18,
+        $19, $20, $21, $22, $23, $24, $25, $26,
+        $27, $28, $29, $30, $31, $32, $33, $34,
+        $35, $36, $37, $38, $39, $40, $41, $42,
+        $43, $44, $45, $46, $47
+      ) RETURNING *
     `, [
       product_id, name, code, batch_code, ingredients_type, has_cream,
       standard_weight, shelf_life, cartons_per_pallet, packs_per_box,
       boxes_per_carton, empty_box_weight, empty_carton_weight, aql_level,
-      day_format, month_format, description, notes
+      day_format, month_format, description, notes,
+      doc_code, issue_no, review_no, issue_date, review_date,
+      product_type, production_line, packaging_type,
+      weight_tolerance_min, weight_tolerance_max,
+      temperature_min, temperature_max, humidity_min, humidity_max,
+      storage_conditions, distribution_requirements,
+      visual_standards ? JSON.stringify(visual_standards) : null,
+      quality_parameters ? JSON.stringify(quality_parameters) : null,
+      packaging_materials ? JSON.stringify(packaging_materials) : null,
+      allergen_info ? JSON.stringify(allergen_info) : null,
+      nutritional_info ? JSON.stringify(nutritional_info) : null,
+      manufacturing_process ? JSON.stringify(manufacturing_process) : null,
+      regulatory_compliance ? JSON.stringify(regulatory_compliance) : null,
+      certifications ? JSON.stringify(certifications) : null,
+      supplier_info ? JSON.stringify(supplier_info) : null,
+      cost_info ? JSON.stringify(cost_info) : null,
+      images ? JSON.stringify(images) : null,
+      documents ? JSON.stringify(documents) : null,
+      tags,
+      metadata ? JSON.stringify(metadata) : null
     ]);
     
     const productUuid = productResult.rows[0].id;
+    const createdProduct = productResult.rows[0];
     
     // Insert custom variables
     for (const variable of customVariables) {
       await client.query(`
         INSERT INTO product_custom_variables (product_id, name, value, description)
         VALUES ($1, $2, $3, $4)
+        ON CONFLICT (product_id, name) DO UPDATE SET
+          value = EXCLUDED.value,
+          description = EXCLUDED.description
       `, [productUuid, variable.name, variable.value, variable.description]);
     }
     
@@ -175,37 +261,66 @@ router.post('/products', asyncHandler(async (req, res) => {
     for (const section of sections) {
       const sectionResult = await client.query(`
         INSERT INTO product_sections (product_id, section_id, section_name, section_type, order_index)
-        VALUES ($1, $2, $3, $4, $5) RETURNING id
-      `, [productUuid, section.section_id, section.section_name, section.section_type, section.order_index]);
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (product_id, section_id) DO UPDATE SET
+          section_name = EXCLUDED.section_name,
+          section_type = EXCLUDED.section_type,
+          order_index = EXCLUDED.order_index
+        RETURNING id
+      `, [productUuid, section.section_id || section.id, section.section_name || section.name, 
+          section.section_type || section.type || 'quality_control', section.order_index || 0]);
       
       const sectionUuid = sectionResult.rows[0].id;
       
-      for (const parameter of section.parameters || []) {
-        await client.query(`
-          INSERT INTO product_parameters (
-            section_id, parameter_id, parameter_name, parameter_type,
-            default_value, validation_rule, calculation_formula, order_index,
-            is_required
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        `, [
-          sectionUuid, parameter.parameter_id, parameter.parameter_name,
-          parameter.parameter_type, parameter.default_value,
-          JSON.stringify(parameter.validation_rule),
-          JSON.stringify(parameter.calculation_formula),
-          parameter.order_index, parameter.is_required
-        ]);
+      // Handle different table structures from frontend
+      const tables = section.tables || [];
+      for (const table of tables) {
+        const parameters = table.parameters || [];
+        for (const parameter of parameters) {
+          await client.query(`
+            INSERT INTO product_parameters (
+              section_id, parameter_id, parameter_name, parameter_type,
+              default_value, validation_rule, calculation_formula, order_index,
+              is_required
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT (section_id, parameter_id) DO UPDATE SET
+              parameter_name = EXCLUDED.parameter_name,
+              parameter_type = EXCLUDED.parameter_type,
+              default_value = EXCLUDED.default_value,
+              validation_rule = EXCLUDED.validation_rule,
+              calculation_formula = EXCLUDED.calculation_formula,
+              order_index = EXCLUDED.order_index,
+              is_required = EXCLUDED.is_required
+          `, [
+            sectionUuid, 
+            parameter.parameter_id || parameter.id || parameter.name,
+            parameter.parameter_name || parameter.name,
+            parameter.parameter_type || parameter.type || 'text',
+            parameter.default_value || parameter.defaultValue,
+            parameter.validation_rule ? JSON.stringify(parameter.validation_rule) : 
+              (parameter.limits ? JSON.stringify({limits: parameter.limits, min: parameter.min, max: parameter.max}) : null),
+            parameter.calculation_formula ? JSON.stringify(parameter.calculation_formula) : 
+              (parameter.calculation ? JSON.stringify(parameter.calculation) : null),
+            parameter.order_index || 0,
+            parameter.is_required || false
+          ]);
+        }
       }
     }
     
-    return productUuid;
+    return createdProduct;
   });
   
-  // Return the created product
-  const createdProduct = await db.findById('products', result);
+  // Return the complete product with all relations
+  const completeProduct = await db.query(
+    'SELECT get_product_configuration($1) as config',
+    [result.id]
+  );
+  
   res.status(201).json({ 
     success: true,
     message: 'Product created successfully',
-    data: createdProduct
+    data: completeProduct.rows[0]?.config || result
   });
 }));
 
@@ -217,21 +332,132 @@ router.put('/products/:id', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Invalid product ID format' });
   }
   
-  const updateData = { ...req.body };
+  const {
+    customVariables = [],
+    sections = [],
+    specifications = [],
+    qualityAttributes = [],
+    packagingDetails = [],
+    productionDetails = [],
+    rawMaterials = [],
+    testingProtocols = [],
+    productCertifications = [],
+    costBreakdown = [],
+    ...updateData
+  } = req.body;
+  
   delete updateData.id; // Remove ID from update data
   delete updateData.created_at; // Remove immutable fields
-  delete updateData.customVariables;
-  delete updateData.sections;
   
-  const updated = await db.updateById('products', id, updateData);
-  
-  if (!updated) {
-    return res.status(404).json({ error: 'Product not found' });
-  }
+  const result = await db.transaction(async (client) => {
+    // Update main product fields
+    const fieldsToUpdate = [];
+    const values = [];
+    let paramIndex = 2; // Start at 2 since $1 is the ID
+    
+    // Build dynamic UPDATE query for non-null fields
+    Object.entries(updateData).forEach(([key, value]) => {
+      if (value !== undefined && key !== 'id' && key !== 'created_at') {
+        // Handle JSONB fields
+        if (['visual_standards', 'quality_parameters', 'packaging_materials', 
+             'allergen_info', 'nutritional_info', 'manufacturing_process',
+             'regulatory_compliance', 'certifications', 'supplier_info',
+             'cost_info', 'images', 'documents', 'metadata'].includes(key)) {
+          fieldsToUpdate.push(`${key} = $${paramIndex}::jsonb`);
+          values.push(JSON.stringify(value));
+        } else {
+          fieldsToUpdate.push(`${key} = $${paramIndex}`);
+          values.push(value);
+        }
+        paramIndex++;
+      }
+    });
+    
+    if (fieldsToUpdate.length > 0) {
+      const updateQuery = `
+        UPDATE products 
+        SET ${fieldsToUpdate.join(', ')}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING *
+      `;
+      const updated = await client.query(updateQuery, [id, ...values]);
+      
+      if (updated.rows.length === 0) {
+        throw new Error('Product not found');
+      }
+    }
+    
+    // Update custom variables - delete and re-insert for simplicity
+    if (customVariables && customVariables.length > 0) {
+      await client.query('DELETE FROM product_custom_variables WHERE product_id = $1', [id]);
+      for (const variable of customVariables) {
+        await client.query(`
+          INSERT INTO product_custom_variables (product_id, name, value, description)
+          VALUES ($1, $2, $3, $4)
+        `, [id, variable.name, variable.value, variable.description]);
+      }
+    }
+    
+    // Update sections and parameters
+    if (sections && sections.length > 0) {
+      // Delete existing sections and parameters
+      await client.query('DELETE FROM product_sections WHERE product_id = $1', [id]);
+      
+      // Re-insert sections and parameters
+      for (const section of sections) {
+        const sectionResult = await client.query(`
+          INSERT INTO product_sections (product_id, section_id, section_name, section_type, order_index)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING id
+        `, [
+          id,
+          section.section_id || section.id,
+          section.section_name || section.name,
+          section.section_type || section.type || 'quality_control',
+          section.order_index || 0
+        ]);
+        
+        const sectionUuid = sectionResult.rows[0].id;
+        
+        // Handle tables and parameters from frontend format
+        const tables = section.tables || [];
+        for (const table of tables) {
+          const parameters = table.parameters || [];
+          for (const parameter of parameters) {
+            await client.query(`
+              INSERT INTO product_parameters (
+                section_id, parameter_id, parameter_name, parameter_type,
+                default_value, validation_rule, calculation_formula, order_index,
+                is_required
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            `, [
+              sectionUuid,
+              parameter.parameter_id || parameter.id || parameter.name,
+              parameter.parameter_name || parameter.name,
+              parameter.parameter_type || parameter.type || 'text',
+              parameter.default_value || parameter.defaultValue,
+              parameter.validation_rule ? JSON.stringify(parameter.validation_rule) :
+                (parameter.limits ? JSON.stringify({limits: parameter.limits, min: parameter.min, max: parameter.max}) : null),
+              parameter.calculation_formula ? JSON.stringify(parameter.calculation_formula) :
+                (parameter.calculation ? JSON.stringify(parameter.calculation) : null),
+              parameter.order_index || 0,
+              parameter.is_required || false
+            ]);
+          }
+        }
+      }
+    }
+    
+    return id;
+  });
   
   // Return updated product with full configuration
   const configResult = await db.query('SELECT get_product_configuration($1) as config', [id]);
-  res.json(configResult.rows[0].config);
+  res.json({
+    success: true,
+    message: 'Product updated successfully',
+    data: configResult.rows[0]?.config
+  });
 }));
 
 // DELETE /api/products/:id - Delete product

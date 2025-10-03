@@ -611,18 +611,78 @@ document.addEventListener('DOMContentLoaded', () => {
     let timeHeaders2hr = [];
     let timeHeaders1hr = [];
 
-    // Initialize products from localStorage or use default with error handling
-    let products;
-
-    try {
-        const savedProducts = localStorage.getItem('productConfigurations');
-        products = savedProducts ? JSON.parse(savedProducts) : null;
-    } catch (parseError) {
-        logError('Loading saved products', parseError);
-        showNotification('Failed to load saved products. Using default configuration.', 'warning', 5000);
-        products = null;
+    // Initialize products from database, then localStorage, or use default
+    let products = {};
+    
+    // Load products from database on startup
+    async function initializeProducts() {
+        try {
+            // First try to load from database if ProductSync is available
+            if (window.ProductSync) {
+                console.log('Loading products from database...');
+                const dbProducts = await ProductSync.loadProducts();
+                if (dbProducts && Object.keys(dbProducts).length > 0) {
+                    products = dbProducts;
+                    // Update localStorage with database products
+                    localStorage.setItem('productConfigurations', JSON.stringify(products));
+                    console.log(`Loaded ${Object.keys(products).length} products from database`);
+                    return;
+                }
+            }
+        } catch (dbError) {
+            console.error('Failed to load products from database:', dbError);
+        }
+        
+        // Fallback to localStorage
+        try {
+            const savedProducts = localStorage.getItem('productConfigurations');
+            if (savedProducts) {
+                const localProducts = JSON.parse(savedProducts);
+                if (localProducts && Object.keys(localProducts).length > 0) {
+                    products = localProducts;
+                    console.log(`Loaded ${Object.keys(products).length} products from localStorage`);
+                    
+                    // Try to sync local products to database
+                    if (window.ProductSync) {
+                        syncLocalProductsToDatabase(localProducts);
+                    }
+                    return;
+                }
+            }
+        } catch (parseError) {
+            logError('Loading saved products from localStorage', parseError);
+            showNotification('Failed to load saved products. Using default configuration.', 'warning', 5000);
+        }
+        
+        // Use default products if nothing else works
+        products = getDefaultProducts();
+        localStorage.setItem('productConfigurations', JSON.stringify(products));
     }
-    products = products || {
+    
+    // Sync local products to database in background
+    async function syncLocalProductsToDatabase(localProducts) {
+        if (!window.ProductSync) return;
+        
+        for (const [productId, product] of Object.entries(localProducts)) {
+            if (!product.db_id) {
+                try {
+                    const savedProduct = await ProductSync.saveProduct(product);
+                    if (savedProduct && savedProduct.db_id) {
+                        products[productId] = savedProduct;
+                        console.log(`Synced product '${product.name}' to database`);
+                    }
+                } catch (error) {
+                    console.error(`Failed to sync product '${product.name}' to database:`, error);
+                }
+            }
+        }
+        
+        // Update localStorage with synced products
+        localStorage.setItem('productConfigurations', JSON.stringify(products));
+    }
+    
+    function getDefaultProducts() {
+        return {
         'plain-no-cocoa': {
             'id': 'plain-no-cocoa',
             'name': 'Plain Biscuits (No Cocoa)',
@@ -8530,19 +8590,61 @@ Return a JSON object with these properties (omit any you don't need):\n\n{
     function editProduct(productId) {
         const product = products[productId];
         if (product) {
-            openProductModal(product);
+            // If product has database ID, load fresh from database
+            if (product.db_id && window.ProductSync) {
+                showNotification('Loading product details...', 'info', 1500);
+                ProductSync.loadProduct(product.db_id)
+                    .then(loadedProduct => {
+                        if (loadedProduct) {
+                            products[productId] = loadedProduct;
+                            openProductModal(loadedProduct);
+                        } else {
+                            openProductModal(product);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Failed to load product from database:', error);
+                        openProductModal(product);
+                    });
+            } else {
+                openProductModal(product);
+            }
         }
     }
 
     // Delete product
     function deleteProduct(productId) {
         if (confirm('Are you sure you want to delete this product?')) {
-            delete products[productId];
-            localStorage.setItem('productConfigurations', JSON.stringify(products));
-            renderProductsTable();
-            // Preserve selection when deleting a different product
-            populateProductDropdown(true);
-            showNotification('Product deleted successfully!');
+            const product = products[productId];
+            
+            // Delete from database if it has a database ID
+            if (product && product.db_id && window.ProductSync) {
+                ProductSync.deleteProduct(product.db_id)
+                    .then(() => {
+                        delete products[productId];
+                        localStorage.setItem('productConfigurations', JSON.stringify(products));
+                        renderProductsTable();
+                        // Preserve selection when deleting a different product
+                        populateProductDropdown(true);
+                        showNotification('Product deleted from database successfully!');
+                    })
+                    .catch(error => {
+                        console.error('Failed to delete from database:', error);
+                        // Still delete locally
+                        delete products[productId];
+                        localStorage.setItem('productConfigurations', JSON.stringify(products));
+                        renderProductsTable();
+                        populateProductDropdown(true);
+                        showNotification('Product deleted locally (database sync failed)', 'warning');
+                    });
+            } else {
+                // Delete locally only
+                delete products[productId];
+                localStorage.setItem('productConfigurations', JSON.stringify(products));
+                renderProductsTable();
+                populateProductDropdown(true);
+                showNotification('Product deleted successfully!');
+            }
         }
     }
 
@@ -8795,7 +8897,7 @@ Return a JSON object with these properties (omit any you don't need):\n\n{
             });
 
 
-            products[productId] = {
+            const productData = {
                 id: productId,
                 name: productName,
                 standardWeight: productStandardWeight,
@@ -8817,12 +8919,52 @@ Return a JSON object with these properties (omit any you don't need):\n\n{
                 customVariables,
                 sections: sections
             };
+            
+            // Include database ID if editing existing product
+            const existingProduct = products[productId];
+            if (existingProduct && existingProduct.db_id) {
+                productData.db_id = existingProduct.db_id;
+            }
 
-            localStorage.setItem('productConfigurations', JSON.stringify(products));
-            renderProductsTable();
-            populateProductDropdown(true);
-            productModal.style.display = 'none';
-            showNotification('Product saved successfully!', 'success');
+            // Save to database if ProductSync is available
+            if (window.ProductSync) {
+                ProductSync.saveProduct(productData)
+                    .then(savedProduct => {
+                        // Update local products with database ID
+                        products[productId] = savedProduct;
+                        localStorage.setItem('productConfigurations', JSON.stringify(products));
+                        renderProductsTable();
+                        populateProductDropdown(true);
+                        productModal.style.display = 'none';
+                        showNotification('Product saved to database successfully!', 'success');
+                        
+                        // If the saved/updated product is currently selected, refresh batch and header
+                        try {
+                            if (productSelect && productSelect.value === productId) {
+                                updateDocumentHeaderDisplay(products[productId]);
+                                generateBatchNumber();
+                            }
+                        } catch(_){}
+                    })
+                    .catch(error => {
+                        console.error('Database save failed, saving locally:', error);
+                        // Fallback to local storage
+                        products[productId] = productData;
+                        localStorage.setItem('productConfigurations', JSON.stringify(products));
+                        renderProductsTable();
+                        populateProductDropdown(true);
+                        productModal.style.display = 'none';
+                        showNotification('Product saved locally (database sync failed)', 'warning');
+                    });
+            } else {
+                // Fallback to localStorage only
+                products[productId] = productData;
+                localStorage.setItem('productConfigurations', JSON.stringify(products));
+                renderProductsTable();
+                populateProductDropdown(true);
+                productModal.style.display = 'none';
+                showNotification('Product saved locally!', 'success');
+            }
 
             // If the saved/updated product is currently selected, refresh batch and header
             try {
@@ -9607,7 +9749,10 @@ if (saveToReportsBtn) saveToReportsBtn.addEventListener('click', ()=>{ try{ wind
         }
     }
 
-    function initialRender() {
+    async function initialRender() {
+        // Initialize products from database first
+        await initializeProducts();
+        
         // Generate initial time headers based on default shift (12 hours)
         generateTimeHeaders();
 
