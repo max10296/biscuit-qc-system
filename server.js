@@ -20,13 +20,10 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com", "https://cdn.tailwindcss.com"],
-      // 1. تم إضافة cdnjs.cloudflare.com للسماح بتحميل مكتبات jspdf
       scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"], 
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
       imgSrc: ["'self'", "data:", "https:"],
-      // 2. تم إضافة mediaSrc للسماح بتحميل ملفات الصوت المشفرة بـ data:audio/wav وdata:audio/mp3
-      mediaSrc: ["'self'", "data:", "data:audio/wav", "data:audio/mp3", "data:audio/mpeg", "blob:"], 
-      // 3. تم إضافة cdn.jsdelivr.net و cdnjs.cloudflare.com للسماح بتحميل خرائط المصدر (.map)
+      mediaSrc: ["'self'", "data:", "blob:"], 
       connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"] 
     }
   }
