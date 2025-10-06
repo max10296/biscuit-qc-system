@@ -1059,26 +1059,65 @@
                 name: document.getElementById('product-name-modal')?.value || '',
                 code: document.getElementById('product-doc-code')?.value || '',
                 batch_code: document.getElementById('product-batch-code')?.value || '',
-                standard_weight: parseFloat(document.getElementById('product-standard-weight')?.value) || 0,
-                shelf_life: parseInt(document.getElementById('product-shelf-life')?.value) || 0,
-                cartons_per_pallet: parseInt(document.getElementById('product-cartons-per-pallet')?.value) || 0,
-                packs_per_box: parseInt(document.getElementById('product-packs-per-box')?.value) || 0,
-                boxes_per_carton: parseInt(document.getElementById('product-boxes-per-carton')?.value) || 0,
-                empty_box_weight: parseFloat(document.getElementById('product-empty-box-weight')?.value) || 0,
-                empty_carton_weight: parseFloat(document.getElementById('product-empty-carton-weight')?.value) || 0,
-                aql_level: document.getElementById('product-aql-level')?.value || '',
+                standard_weight: parseFloat(document.getElementById('product-standard-weight')?.value) || 185.0,
+                shelf_life: parseInt(document.getElementById('product-shelf-life')?.value) || 6,
+                cartons_per_pallet: parseInt(document.getElementById('product-cartons-per-pallet')?.value) || 56,
+                packs_per_box: parseInt(document.getElementById('product-packs-per-box')?.value) || 6,
+                boxes_per_carton: parseInt(document.getElementById('product-boxes-per-carton')?.value) || 14,
+                empty_box_weight: parseFloat(document.getElementById('product-empty-box-weight')?.value) || 21.0,
+                empty_carton_weight: parseFloat(document.getElementById('product-empty-carton-weight')?.value) || 680.0,
+                aql_level: document.getElementById('product-aql-level')?.value || '1.5',
                 day_format: document.getElementById('product-day-format')?.value || 'DD',
                 month_format: document.getElementById('product-month-format')?.value || 'letter',
                 description: document.getElementById('product-description')?.value || '',
-                notes: document.getElementById('product-notes')?.value || ''
+                notes: document.getElementById('product-notes')?.value || '',
+                // Add additional fields with defaults to match API expectations
+                ingredients_type: 'without-cocoa',
+                has_cream: false
             };
 
-            // Only return data if we have required fields
-            if (productData.name && productData.name.trim() !== '') {
-                return productData;
+            // Validate required fields according to API requirements
+            const requiredFields = ['name', 'code'];
+            const missingFields = [];
+            
+            // Check for required fields
+            if (!productData.name || productData.name.trim() === '') {
+                missingFields.push('Product Name');
+            }
+            
+            if (!productData.code || productData.code.trim() === '') {
+                missingFields.push('Document Code');
             }
 
-            return null;
+            // If product_id is empty, generate one based on name or code
+            if (!productData.product_id || productData.product_id.trim() === '') {
+                if (productData.name && productData.name.trim()) {
+                    // Generate a product_id from the name
+                    productData.product_id = productData.name.trim()
+                        .toUpperCase()
+                        .replace(/\s+/g, '_')
+                        .replace(/[^A-Z0-9_]/g, '')
+                        .substring(0, 20);
+                } else if (productData.code && productData.code.trim()) {
+                    // Use code as product_id if name is not available
+                    productData.product_id = productData.code.trim();
+                }
+            }
+
+            if (missingFields.length > 0) {
+                console.error('Missing required fields for product creation:', missingFields);
+                // Show user-friendly error message
+                if (window.ProductManagement && window.ProductManagement.showNotification) {
+                    window.ProductManagement.showNotification(
+                        `Please fill in the required fields: ${missingFields.join(', ')}`,
+                        'error'
+                    );
+                }
+                return null;
+            }
+
+            console.log('Product data prepared for saving:', productData);
+            return productData;
         }
     }
 

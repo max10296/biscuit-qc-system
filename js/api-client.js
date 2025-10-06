@@ -53,7 +53,35 @@ class APIClient {
     }
 
     async createProduct(product) {
-        return this.request('POST', '/products', product);
+        // Ensure required fields are present and validate data before sending
+        const productData = {
+            ...product,
+            // Ensure required fields have values
+            product_id: product.product_id || product.id || '',
+            name: product.name || '',
+            code: product.code || '',
+            // Provide default values for other fields to match API expectations
+            batch_code: product.batch_code || '',
+            ingredients_type: product.ingredients_type || 'without-cocoa',
+            has_cream: product.has_cream || false,
+            standard_weight: parseFloat(product.standard_weight) || 185.0,
+            shelf_life: parseInt(product.shelf_life) || 6,
+            cartons_per_pallet: parseInt(product.cartons_per_pallet) || 56,
+            packs_per_box: parseInt(product.packs_per_box) || 6,
+            boxes_per_carton: parseInt(product.boxes_per_carton) || 14,
+            empty_box_weight: parseFloat(product.empty_box_weight) || 21.0,
+            empty_carton_weight: parseFloat(product.empty_carton_weight) || 680.0,
+            aql_level: product.aql_level || '1.5',
+            day_format: product.day_format || 'DD',
+            month_format: product.month_format || 'letter',
+            description: product.description || '',
+            notes: product.notes || '',
+            customVariables: product.customVariables || [],
+            sections: product.sections || []
+        };
+
+        console.log('API Client: Sending product data:', productData);
+        return this.request('POST', '/products', productData);
     }
 
     async updateProduct(id, product) {

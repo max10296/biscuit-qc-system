@@ -197,11 +197,20 @@ saveProductFromForm: function() {
             return;
         }
         
-        // ✅ FIX 3: تحسين التحقق من صحة البيانات (Validation)
-        // التحقق من أن حقل اسم المنتج (name) ليس فارغًا قبل الإرسال إلى API.
+        // ✅ Enhanced validation for API requirements
         if (!productData.name || productData.name.trim() === '') {
             this.showNotification('⚠️ Product Name is required to save a new product.', 'error');
-            return; // إيقاف عملية الحفظ
+            return; // Stop save operation
+        }
+        
+        if (!productData.code || productData.code.trim() === '') {
+            this.showNotification('⚠️ Document Code is required to save a new product.', 'error');
+            return; // Stop save operation
+        }
+        
+        if (!productData.product_id || productData.product_id.trim() === '') {
+            this.showNotification('⚠️ Product ID is required to save a new product.', 'error');
+            return; // Stop save operation
         }
         
         if (productData) {
@@ -243,8 +252,23 @@ saveProductFromForm: function() {
 
     } catch (error) {
         console.error('Error saving product:', error);
-        // ✅ FIX 1: عرض رسالة خطأ مفصلة في حالة فشل الاتصال بقاعدة البيانات
-        this.showNotification(`❌ Failed to save product. Server/API Error: ${error.message || 'Unknown error. Check API server status.'}`, 'error');
+        
+        // Provide specific error messages based on the error type
+        let errorMessage = '❌ Failed to save product. ';
+        
+        if (error.message.includes('HTTP 400')) {
+            errorMessage += 'Please check that all required fields (Product Name, Document Code) are filled correctly.';
+        } else if (error.message.includes('HTTP 409')) {
+            errorMessage += 'A product with this ID or code already exists. Please use different values.';
+        } else if (error.message.includes('HTTP 500')) {
+            errorMessage += 'Server error occurred. Please try again later.';
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('ECONNREFUSED')) {
+            errorMessage += 'Cannot connect to server. Please check if the server is running.';
+        } else {
+            errorMessage += `Server/API Error: ${error.message || 'Unknown error. Check API server status.'}`;
+        }
+        
+        this.showNotification(errorMessage, 'error');
     }
 },
 
