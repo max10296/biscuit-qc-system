@@ -1,0 +1,2 @@
+{"timestamp":"2025-10-05T19:01:02.492Z","level":"INFO","service":"biscuit-qc","message":"Application starting","nodeVersion":"v22.20.0","platform":"win32","pid":24164,"config":{"port":3000,"database":"configured"}}
+{"timestamp":"2025-10-05T19:01:21.655Z","level":"INFO","service":"biscuit-qc","message":"Application starting","nodeVersion":"v22.20.0","platform":"win32","pid":352,"config":{"port":3000,"database":"configured"}}
