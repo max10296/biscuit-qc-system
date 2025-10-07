@@ -1,0 +1,463 @@
+/**
+ * Enhanced Time-Based Navigation Styles
+ * Provides visual indicators for current, upcoming, and past inspection times
+ */
+
+/* ============================================================================
+   Active Time Slot Highlighting
+   ============================================================================ */
+
+/* Active column background - synchronized between header and body */
+.time-slot-active {
+    background: linear-gradient(
+        to bottom, 
+        rgba(99, 102, 241, 0.20), 
+        rgba(99, 102, 241, 0.14)
+    ) !important;
+    position: relative;
+    box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.4) !important;
+    transition: all 0.3s ease;
+}
+
+/* Active header cell - more prominent */
+th.time-slot-active {
+    color: #1e1b4b !important;
+    font-weight: 700 !important;
+    background: linear-gradient(
+        135deg, 
+        rgba(99, 102, 241, 0.3), 
+        rgba(129, 140, 248, 0.28)
+    ) !important;
+    box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.5) !important;
+}
+
+/* Clock icon indicator */
+th.time-slot-active::after {
+    content: "\23F1";
+    font-size: 0.85rem;
+    margin-left: 0.4rem;
+    color: #4338ca;
+    opacity: 1;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Body cell active state */
+td.time-slot-active {
+    border-left: 2px solid rgba(79, 70, 229, 0.5) !important;
+    border-right: 2px solid rgba(79, 70, 229, 0.5) !important;
+}
+
+/* First row active cell */
+tbody tr:first-child td.time-slot-active {
+    border-top: 2px solid rgba(79, 70, 229, 0.5) !important;
+}
+
+/* Last row active cell */
+tbody tr:last-child td.time-slot-active {
+    border-bottom: 2px solid rgba(79, 70, 229, 0.5) !important;
+}
+
+/* ============================================================================
+   Upcoming Time Slot Indication
+   ============================================================================ */
+
+.time-slot-upcoming {
+    background: linear-gradient(
+        to bottom, 
+        rgba(234, 179, 8, 0.12), 
+        rgba(234, 179, 8, 0.08)
+    ) !important;
+    position: relative;
+}
+
+th.time-slot-upcoming {
+    color: #713f12 !important;
+    font-weight: 600 !important;
+}
+
+th.time-slot-upcoming::after {
+    content: "\25B6";
+    font-size: 0.65rem;
+    margin-left: 0.3rem;
+    color: #ca8a04;
+    opacity: 0.8;
+}
+
+/* ============================================================================
+   Past Time Slot Indication
+   ============================================================================ */
+
+.time-slot-past {
+    background: linear-gradient(
+        to bottom,
+        rgba(148, 163, 184, 0.10),
+        rgba(148, 163, 184, 0.06)
+    ) !important;
+    position: relative;
+    opacity: 0.85;
+    transition: background 0.3s ease, opacity 0.3s ease;
+}
+
+.time-slot-past.time-slot-complete {
+    background: linear-gradient(
+        to bottom,
+        rgba(34, 197, 94, 0.18),
+        rgba(34, 197, 94, 0.10)
+    ) !important;
+    opacity: 0.95;
+}
+
+.time-slot-past.time-slot-incomplete {
+    background: linear-gradient(
+        to bottom,
+        rgba(248, 113, 113, 0.22),
+        rgba(248, 113, 113, 0.12)
+    ) !important;
+    opacity: 1;
+}
+
+th.time-slot-past {
+    color: #475569 !important;
+    font-weight: 500 !important;
+}
+
+th.time-slot-past.time-slot-complete {
+    color: #166534 !important;
+    font-weight: 600 !important;
+}
+
+th.time-slot-past.time-slot-incomplete {
+    color: #b91c1c !important;
+    font-weight: 700 !important;
+}
+
+th.time-slot-past::after {
+    content: "" !important;
+}
+
+th.time-slot-past.time-slot-complete::after {
+    content: "\2714" !important;
+    font-size: 0.8rem;
+    margin-left: 0.35rem;
+    color: #16a34a;
+    opacity: 0.9;
+}
+
+th.time-slot-past.time-slot-incomplete::after {
+    content: "\274C" !important;
+    font-size: 0.8rem;
+    margin-left: 0.35rem;
+    color: #dc2626;
+    opacity: 0.9;
+}
+
+td.time-slot-past {
+    position: relative;
+}
+
+/* Remove checkmarks/crosses from individual cells - only show in header */
+td.time-slot-past::after {
+    content: "" !important;
+    display: none !important;
+}
+
+td.time-slot-past.time-slot-complete::after,
+td.time-slot-past.time-slot-incomplete::after {
+    display: none !important;
+}
+
+td.time-slot-past.time-slot-complete {
+    box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.35);
+}
+
+td.time-slot-past.time-slot-incomplete {
+    box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.35);
+}
+
+/* ============================================================================
+   Locked Time Slot State
+   ============================================================================ */
+
+.time-slot-locked {
+    cursor: not-allowed;
+}
+
+th.time-slot-locked {
+    color: #4b5563 !important;
+    font-weight: 600 !important;
+}
+
+th.time-slot-locked:not(.time-slot-active),
+td.time-slot-locked:not(.time-slot-active) {
+    background-image: repeating-linear-gradient(
+        135deg,
+        rgba(148, 163, 184, 0.2),
+        rgba(148, 163, 184, 0.2) 10px,
+        rgba(229, 231, 235, 0.2) 10px,
+        rgba(229, 231, 235, 0.2) 20px
+    ) !important;
+}
+
+td.time-slot-locked {
+    position: relative;
+    opacity: 0.85;
+}
+
+td.time-slot-locked::after,
+th.time-slot-locked:not(.time-slot-active):not(.time-slot-upcoming):not(.time-slot-past)::after {
+    content: "\1F512";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 0.8rem;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+td.time-slot-locked input,
+td.time-slot-locked textarea,
+td.time-slot-locked select,
+td.time-slot-locked button {
+    cursor: not-allowed;
+}
+
+td.time-slot-locked [contenteditable],
+td.time-slot-locked [contenteditable="true"] {
+    cursor: not-allowed;
+}
+
+/* ============================================================================
+   Hover Effects
+   ============================================================================ */
+
+.time-slot-active:hover {
+    background: linear-gradient(
+        to bottom, 
+        rgba(99, 102, 241, 0.28), 
+        rgba(99, 102, 241, 0.22)
+    ) !important;
+    box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.6) !important;
+}
+
+th.time-slot-active:hover {
+    background: linear-gradient(
+        135deg, 
+        rgba(99, 102, 241, 0.38), 
+        rgba(129, 140, 248, 0.35)
+    ) !important;
+}
+
+/* ============================================================================
+   Animations
+   ============================================================================ */
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Apply slide-in animation when class is added */
+.time-slot-active {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* ============================================================================
+   Time Navigation Indicators (Optional Visual Enhancements)
+   ============================================================================ */
+
+/* Add a visual bar at the top of active columns */
+th.time-slot-active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4f46e5, #6366f1, #4f46e5);
+    border-radius: 0;
+    animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ============================================================================
+   Print Styles - Maintain indicators in printed reports
+   ============================================================================ */
+
+@media print {
+    .time-slot-active {
+        background: rgba(99, 102, 241, 0.15) !important;
+        box-shadow: inset 0 0 0 1pt rgba(79, 70, 229, 0.5) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    th.time-slot-active {
+        background: rgba(99, 102, 241, 0.25) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    
+    th.time-slot-active::after {
+        content: " \23F1";
+        color: #4338ca !important;
+    }
+
+    th.time-slot-past.time-slot-complete,
+    td.time-slot-past.time-slot-complete,
+    th.time-slot-past.time-slot-incomplete,
+    td.time-slot-past.time-slot-incomplete {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    th.time-slot-past.time-slot-complete::after,
+    td.time-slot-past.time-slot-complete::after {
+        color: #15803d !important;
+    }
+
+    th.time-slot-past.time-slot-incomplete::after,
+    td.time-slot-past.time-slot-incomplete::after {
+        color: #b91c1c !important;
+    }
+    
+    /* Hide animations in print */
+    th.time-slot-active::before {
+        display: none !important;
+    }
+}
+
+/* ============================================================================
+   Responsive Design - Mobile Optimization
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    .time-slot-active {
+        box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.4) !important;
+    }
+    
+    th.time-slot-active::after {
+        font-size: 0.75rem;
+        margin-left: 0.25rem;
+    }
+    
+    th.time-slot-active::before {
+        height: 3px;
+    }
+}
+
+/* ============================================================================
+   Dark Mode Support (Optional)
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+    .time-slot-active {
+        background: linear-gradient(
+            to bottom, 
+            rgba(129, 140, 248, 0.25), 
+            rgba(129, 140, 248, 0.18)
+        ) !important;
+        box-shadow: inset 0 0 0 2px rgba(129, 140, 248, 0.5) !important;
+    }
+    
+    th.time-slot-active {
+        color: #e0e7ff !important;
+        background: linear-gradient(
+            135deg, 
+            rgba(129, 140, 248, 0.35), 
+            rgba(165, 180, 252, 0.32)
+        ) !important;
+    }
+    
+    th.time-slot-active::after {
+        color: #a5b4fc;
+    }
+}
+
+/* ============================================================================
+   Accessibility Enhancements
+   ============================================================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .time-slot-active {
+        background: rgba(99, 102, 241, 0.35) !important;
+        box-shadow: inset 0 0 0 3px rgba(79, 70, 229, 0.8) !important;
+    }
+    
+    th.time-slot-active {
+        background: rgba(99, 102, 241, 0.45) !important;
+        box-shadow: inset 0 0 0 3px rgba(79, 70, 229, 0.9) !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .time-slot-active,
+    th.time-slot-active::after,
+    th.time-slot-active::before {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* Focus indicator for keyboard navigation */
+.time-slot-active:focus-within {
+    outline: 3px solid #4f46e5;
+    outline-offset: 2px;
+}
+
+/* ============================================================================
+   Table-Specific Overrides
+   ============================================================================ */
+
+/* Ensure compatibility with different table types */
+.form-table .time-slot-active,
+.data-table .time-slot-active,
+.inspection-table .time-slot-active {
+    /* Inherit all styles from above */
+}
+
+/* Parameters table specific */
+.parameters-table .time-slot-active {
+    /* Slightly softer background for parameter tables */
+    background: linear-gradient(
+        to bottom, 
+        rgba(99, 102, 241, 0.16), 
+        rgba(99, 102, 241, 0.11)
+    ) !important;
+}
+
+/* AI table specific */
+.ai-table .time-slot-active {
+    /* Maintain full intensity for AI tables */
+    background: linear-gradient(
+        to bottom, 
+        rgba(99, 102, 241, 0.22), 
+        rgba(99, 102, 241, 0.16)
+    ) !important;
+}

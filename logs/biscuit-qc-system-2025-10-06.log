@@ -1,0 +1,9 @@
+{"timestamp":"2025-10-06T18:36:52.858Z","level":"INFO","service":"biscuit-qc-system","message":"Application starting","nodeVersion":"v22.20.0","platform":"win32","pid":14632,"environment":"development","config":{"port":"3000","database":"configured"}}
+{"timestamp":"2025-10-06T18:36:52.868Z","level":"INFO","service":"biscuit-qc-system","message":"Application starting","nodeVersion":"v22.20.0","platform":"win32","pid":25984,"environment":"development","config":{"port":"3000","database":"configured"}}
+{"timestamp":"2025-10-06T18:36:52.951Z","level":"INFO","service":"biscuit-qc-system","message":"Database connected successfully"}
+{"timestamp":"2025-10-06T18:36:52.961Z","level":"INFO","service":"biscuit-qc-system","message":"Database connected successfully"}
+{"timestamp":"2025-10-06T18:36:52.961Z","level":"INFO","service":"biscuit-qc-system","message":"All required tables exist"}
+{"timestamp":"2025-10-06T18:36:52.962Z","level":"INFO","service":"biscuit-qc-system","message":"Database initialized successfully"}
+{"timestamp":"2025-10-06T18:36:52.965Z","level":"INFO","service":"biscuit-qc-system","message":"Biscuit QC Server running on port 3000","environment":"development","healthCheck":"http://localhost:3000/health","databaseHealth":"http://localhost:3000/health/db","mainApplication":"http://localhost:3000/"}
+{"timestamp":"2025-10-06T18:37:45.602Z","level":"INFO","service":"biscuit-qc-system","message":"Application starting","nodeVersion":"v22.20.0","platform":"win32","pid":18168,"environment":"development","config":{"port":"3000","database":"configured"}}
+{"timestamp":"2025-10-06T18:37:45.670Z","level":"INFO","service":"biscuit-qc-system","message":"Database connected successfully"}

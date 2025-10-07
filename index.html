@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Biscuit Quality Control Form</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/print.css">
+    <!-- Unified Product Management Styles -->
+    <link rel="stylesheet" href="css/product-management-unified.css">
+    <!-- Legacy styles kept for compatibility -->
+    <link rel="stylesheet" href="css/product-management-enhanced.css">
+    <!-- Product Tabs Styles -->
+    <link rel="stylesheet" href="css/product-tabs.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/notes.css">
+    <link rel="stylesheet" href="css/notes-print.css">
+    <link rel="stylesheet" href="css/signatures.css">
+    <link rel="stylesheet" href="css/prompt-table.css">
+    <!-- Enhanced Time Navigation Styles -->
+    <link rel="stylesheet" href="css/time-navigation-enhanced.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/expr-eval@2.0.2/dist/bundle.min.js"></script>
+
+    <script src="js/calculation-system.js" defer></script>
+    <script src="js/product-tabs-manager.js" defer></script>
+    <script src="js/formula-templates.js" defer></script>
+    <script src="js/signature-management.js" defer></script>
+    <script src="js/ai-table.js" defer></script>
+    <script src="js/ai-table-fix.js" defer></script>
+    <script src="js/ai-table-integration.js" defer></script>
+    <script src="js/prompt-table-engine.js" defer></script>
+    <script src="js/product-management-integration.js" defer></script>
+    
+    <!-- New Enhancement Scripts -->
+    <script src="js/session-persistence.js" defer></script>
+    <!-- Enhanced Time-Based Navigation with synchronized column highlighting -->
+    <script src="js/time-based-navigation-enhanced.js" defer></script>
+
+</head>
+
+<body class="bg-gray-100 text-gray-800 text-xs">
+    <div class="print-header print-only">
+        <div class="ph-top">
+            <div class="logo-box">
+                <img id="print-logo" src="" alt="Company Logo" style="max-height: 60px; max-width: 100%; display: none;">
+                <span id="print-logo-text">LOGO</span>
+            </div>
+            <div class="ph-title">
+                <div class="title-en">QUALITY CONTROL FORM - BISCUIT MANUFACTURING</div>
+                <div class="title-ar">نموذج ضبط الجودة - صناعة البسكويت</div>
+            </div>
+            <div class="ph-meta">
+                <div>Form No: <span id="ph-form-code">QA-FM-FORM</span></div>
+                <div>Issue: <span id="ph-issue">01</span> | Review: <span id="ph-review">00</span></div>
+            </div>
+        </div>
+        <div class="ph-info">
+            <div><span class="lbl">Product</span><span id="ph-product-name">-</span></div>
+            <div><span class="lbl">Batch</span><span id="ph-batch-number">-</span></div>
+            <div><span class="lbl">Date</span><span id="ph-date">-</span></div>
+            <div><span class="lbl">Shift</span><span id="ph-shift">-</span></div>
+        </div>
+    </div>
+
+    <div class="print-footer print-only">
+        <div class="pf-left">Form: <span id="pf-form-code">QA-FM-FORM</span> | Issue: <span id="pf-issue">01</span> |
+            Review: <span id="pf-review">00</span></div>
+        <div class="pf-center text-center">Advanced Quality Control Form - Biscuit Manufacturing</div>
+        <div class="pf-right text-right"><span class="page-number">Page </span></div>
+    </div>
+    <div id="print-area" class="max-w-full mx-auto p-4 bg-white shadow-lg print:shadow-none">
+        <div class="mb-3 border-2 border-gray-800 p-2">
+            <div class="flex justify-between items-center mb-2">
+                <div class="flex items-center">
+                    <div id="form-logo-container" class="mr-4">
+                        <img id="form-logo" src="" alt="Logo" style="max-height: 50px; max-width: 120px; display: none;">
+                    </div>
+                    <div class="text-lg font-bold">
+                        <i class="fas fa-cookie-bite mr-2"></i>QUALITY CONTROL FORM - BISCUIT MANUFACTURING
+                    </div>
+                </div>
+                <div class="text-right text-xs">
+                    <div>Issue Date: <span id="doc-issue-date">-</span> | <span id="doc-code">-</span></div>
+                    <div>Review Date: <span id="doc-review-date">-</span> | Issue N.: <span id="doc-issue-no">-</span> |
+                        Review N.: <span id="doc-review-no">-</span></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-4 gap-3 text-sm">
+                <div>
+                    <label class="font-semibold">Product Name:</label>
+                    <select id="product-name" class="border-b border-gray-400 w-full ml-2 input-field">
+                        <option value="">Select a Product</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="font-semibold">Date:</label>
+                    <input id="report-date" type="date" class="border-b border-gray-400 w-full ml-2 input-field">
+                </div>
+                <div>
+                    <label class="font-semibold">Shift Duration:</label>
+                    <select id="shift-duration" class="border-b border-gray-400 w-full ml-2 input-field">
+                        <option value="8">8 Hours</option>
+                        <option value="12">12 Hours</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="font-semibold">Shift Letter:</label>
+                    <select id="shift" class="border-b border-gray-400 w-full ml-2 input-field">
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-4 gap-3 text-sm mt-2">
+                <div>
+                    <label class="font-semibold">Batch Number:</label>
+                    <input id="batch-number" type="text" class="border-b border-gray-400 w-full ml-2 input-field"
+                        readonly>
+                </div>
+                <div>
+                    <label class="font-semibold">Start Inspection Time:</label>
+                    <input id="start-inspection-time" type="time"
+                        class="border-b border-gray-400 w-full ml-2 input-field" value="08:00">
+                </div>
+                <div class="col-span-1"></div>
+                <div class="no-print flex justify-end">
+                    <button id="save-to-reports" class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"><i class="fas fa-cloud-upload-alt mr-1"></i>Save to Reports</button>
+                    <button id="reset-form" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 ml-2"><i
+                            class="fas fa-trash-alt mr-1"></i>Reset</button>
+                    <button id="export-pdf" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 ml-2"><i
+                            class="fas fa-file-pdf mr-1"></i>Export PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-container no-print">
+            <div class="tab active" data-tab="form-tab">Quality Control Form</div>
+            <div class="tab" data-tab="settings-tab">Settings</div>
+        </div>
+
+        <div id="form-tab" class="tab-content active">
+            <!-- Alerts Section (Always Active) -->
+                    
+            <div id="dynamic-sections-container">
+            </div>
+
+            <div id="section-6" class="mb-4">
+            </div>
+
+            <div id="section-7" class="mb-4">
+            </div>
+
+            <div id="quality-criteria-container" class="mb-4">
+            </div>
+
+            <div id="product-notes-display-container" class="mb-4" style="display: none;">
+                <h2 class="section-header p-2 mb-2">
+                    <i class="fas fa-sticky-note mr-2"></i>PRODUCT NOTES
+                </h2>
+                <div id="product-notes-display"
+                    class="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm whitespace-pre-wrap"></div>
+            </div>
+
+            <!-- Signatures Block (auto-rendered from product configuration) -->
+            <div id="signature-block-container" class="mb-4">
+                <h2 class="section-header p-2 mb-2">
+                    <i class="fas fa-signature mr-2"></i>Signatures
+                </h2>
+                <div id="signature-block" class="signature-block">
+                    <div class="signature-grid" id="signature-grid"></div>
+                </div>
+            </div>
+
+            <div class="mt-3 text-center text-xs text-gray-600 border-t pt-2">
+                <div class="flex justify-between">
+                    <span>Form No: <span id="doc-code-footer">-</span> | Issue: <span id="doc-issue-no-footer">-</span>
+                        | Review: <span id="doc-review-no-footer">-</span></span>
+                    <span>Advanced Quality Control Form - Biscuit Manufacturing</span>
+                    <span>Page: Single Continuous Form</span>
+                </div>
+            </div>
+        </div>
+
+
+
+    <!-- Settings Tab -->
+    <div id="settings-tab" class="tab-content">
+        <div class="mb-4">
+            <h2 class="section-header p-2 mb-2">
+                <i class="fas fa-cog mr-2"></i>SYSTEM SETTINGS
+            </h2>
+            
+            <!-- Settings Tabs -->
+            <div class="settings-tabs-container">
+                <div class="settings-tab-buttons">
+                    <button class="settings-tab-button active" data-settings-tab="general">General Settings</button>
+                    <button class="settings-tab-button" data-settings-tab="product-management">Product Management</button>
+                    <button class="settings-tab-button" data-settings-tab="formulas-library">Formulas Library</button>
+                </div>
+                
+                <div id="general-settings" class="settings-tab-content active">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="text-lg font-bold flex items-center">
+                                <i class="fas fa-sliders-h mr-2"></i>
+                                General Settings
+                            </h3>
+                        </div>
+                        <div class="card-body space-y-4 text-sm text-gray-600">
+                            <p>General system settings and configurations.</p>
+                            <div class="rounded-lg border border-purple-100 bg-purple-50/60 p-4 text-gray-700">
+                                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                    <label for="inspection-lock-window" class="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                        <i class="fas fa-lock text-purple-500"></i>
+                                        Inspection Entry Lock Window (minutes)
+                                    </label>
+                                    <div class="flex items-center gap-2">
+                                        <input id="inspection-lock-window" type="number" min="0" max="720" step="5" class="w-28 rounded border border-purple-200 bg-white px-3 py-1 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-300" />
+                                        <button id="inspection-lock-window-reset" type="button" class="text-xs font-medium text-purple-600 hover:text-purple-800">
+                                            Reset
+                                        </button>
+                                    </div>
+                                </div>
+                                <p id="inspection-lock-window-summary" class="mt-2 text-xs text-gray-500">
+                                    Locking disabled — inspection columns remain editable at any time.
+                                </p>
+                                <p class="mt-1 text-xs text-gray-500">
+                                    Define how close the current time must be to a scheduled inspection slot before entry is allowed. Set to <strong>0</strong> to disable time locking completely.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Product Management Tab Content -->
+                <div id="product-management-settings" class="settings-tab-content" style="display:none;">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold mb-3">
+                            <i class="fas fa-cogs mr-2"></i>PRODUCT MANAGEMENT
+                        </h3>
+                        <div class="p-2 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded mb-3 text-xs">
+                            Tip: You can configure the controlled document header (Issue Date, Document Code, Review details)
+                            inside each product modal. These values appear in the top header, footer, and exported PDF.
+                        </div>
+                        <div class="no-print mb-4 flex justify-between">
+                            <div>
+                                <button id="add-product-btn"
+                                    class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"><i
+                                        class="fas fa-plus mr-1"></i>Add Product</button>
+                                <button id="import-products-btn"
+                                    class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 ml-2"><i
+                                        class="fas fa-file-import mr-1"></i>Import</button>
+                                <button id="export-products-btn"
+                                    class="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 ml-2"><i
+                                        class="fas fa-file-export mr-1"></i>Export</button>
+                            </div>
+                            <div>
+                                <input type="text" id="product-search" placeholder="Search products..."
+                                    class="border border-gray-300 p-2 rounded">
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="form-table w-full" id="products-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product ID</th>
+                                        <th>Product Name</th>
+                                        <th>Standard Weight (g)</th>
+                                        <th>Shelf Life (months)</th>
+                                        <th>Cartons per Pallet</th>
+                                        <th>Sections Count</th>
+                                        <th>Batch Code</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="products-table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+
+                
+                <!-- Formulas Library Tab Content -->
+                <div id="formulas-library-settings" class="settings-tab-content" style="display:none;">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold mb-3">
+                            <i class="fas fa-square-root-alt mr-2"></i>FORMULAS LIBRARY & TEMPLATES
+                        </h3>
+                        <div class="p-2 bg-blue-50 text-blue-800 border border-blue-200 rounded mb-3 text-xs">
+                            1) اضغط Copy Standard AI Prompt وانسخه لأي ذكاء اصطناعي. 2) اطلب منه إنشاء معادلة (مثل: توزيع بواسون). 3) الصق ناتج JSON هنا ثم اضغط Import.
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div class="p-3 bg-white border rounded">
+                                <h3 class="font-semibold mb-2">Import Template from AI</h3>
+                                <p class="text-xs text-gray-600 mb-2">Paste the JSON from AI using the standard prompt. The formula will render and you can map variables to real fields/params/custom variables.</p>
+                                <textarea id="ai-template-input" class="w-full border p-2 rounded h-40 text-xs" placeholder="{\n  \"id\": \"poisson\",\n  \"name\": \"Poisson Distribution PMF\",\n  \"latex\": \"P(X=k)=\\\\frac{e^{-\\\\lambda}\\\\,\\\\lambda^{k}}{k!}\",\n  \"variables\":[{\"name\":\"lambda\",\"label\":\"Average defects (λ)\"},{\"name\":\"k\",\"label\":\"Observed defects (k)\"}],\n  \"compute\": \"(vars,util)=> Math.exp(-vars.lambda)*Math.pow(vars.lambda, vars.k)/util.factorial(vars.k)\"\n}"></textarea>
+                                <div class="flex justify-end space-x-2 mt-2">
+                                    <button id="copy-ai-prompt" class="bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 text-xs">Copy Standard AI Prompt</button>
+                                    <button id="import-ai-template" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs">Import</button>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-white border rounded">
+                                <h3 class="font-semibold mb-2">Available Templates</h3>
+                                <div id="templates-list" class="space-y-2 text-sm"></div>
+                            </div>
+                        </div>
+                        <div id="template-details" class="mt-4 p-3 bg-white border rounded" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="text-xl font-bold mb-4" id="modal-title">Add Product</h2>
+            <form id="product-form">
+                <!-- Tab structure will be injected here by product-tabs-manager.js -->
+                <!-- The form sections are now managed dynamically by tabs -->
+                <div class="flex justify-end space-x-2 mt-4">
+                    <button type="button" id="cancel-product-btn"
+                        class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+                    <button type="submit" id="save-product-btn"
+                        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+
+    <!-- Shared Utility Methods -->
+    <script src="js/utils.js" defer></script>
+    
+    <!-- Alert and Sound System -->
+    <script src="js/alert-sound-utils.js"></script>
+    
+    <!-- Settings Tabs Management -->
+    <script src="js/settings-tabs.js"></script>
+    
+    <!-- Settings Password Protection -->
+    <script src="js/settings-password-protection.js"></script>
+    
+    <!-- Application Improvements and Fixes -->
+    <script src="js/app-improvements.js"></script>
+    
+    <!-- Hidden Test Mode System (Enhanced Genius Mode v2) -->
+    <script src="js/test-mode-genius-v2.js"></script>
+    <!-- Notes below tables -->
+    <script src="js/table-notes.js" defer></script>
+    <!-- Toggle Show/Hide Notes button next to CSV/Excel/Stop -->
+    <script src="js/notes-toggle.js" defer></script>
+    <script src="js/notes-print-export.js" defer></script>
+    <!-- Signatures Renderer -->
+    <script src="js/signatures-render.js" defer></script>
+    
+    <!-- API Client for PostgreSQL Backend -->
+    <script src="js/api-client.js"></script>
+
+    <script src="js/script.js" defer></script>
+    <script src="js/report-workflow.js" defer></script>
+
+    <!-- Unified Product Management System v2.0 -->
+    <script src="js/product-management-unified.js"></script>
+
+    <!-- Legacy modules commented out - replaced by unified system -->
+    <!-- <script src="js/product-management-enhanced.js" defer></script> -->
+    <!-- <script src="js/product-management-fix.js" defer></script> -->
+
+    <script src="js/ui-enhancements.js" defer></script>
+    
+    <script>
+        // Print button + sync header/footer info
+        document.addEventListener('DOMContentLoaded', function () {
+            // Add Reports link into main controls bar
+            try {
+                const bar = document.querySelector('.no-print.flex.justify-end');
+                if (bar && !bar.querySelector('[data-nav-reports]')) {
+                    const a = document.createElement('a');
+                    a.href = 'reports.html';
+                    a.setAttribute('data-nav-reports','1');
+                    a.className = 'bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 ml-2';
+                    a.innerHTML = '<i class="fas fa-chart-line mr-1"></i>Reports';
+                    bar.appendChild(a);
+                }
+            } catch(e) { /* noop */ }
+
+            const printBtn = document.getElementById('print-btn');
+            function syncPrintMeta() {
+                // Read values from existing fields and copy to header/footer
+                const productSel = document.getElementById('product-name');
+                const productText = productSel && productSel.options[productSel.selectedIndex] ? productSel.options[productSel.selectedIndex].text : '-';
+                const batch = document.getElementById('batch-number')?.value || '-';
+                const date = document.getElementById('report-date')?.value || '-';
+                const shift = document.getElementById('shift')?.value || '-';
+
+                document.getElementById('ph-product-name').textContent = productText || '-';
+                document.getElementById('ph-batch-number').textContent = batch || '-';
+                document.getElementById('ph-date').textContent = date || '-';
+                document.getElementById('ph-shift').textContent = shift || '-';
+
+                // Controlled doc data (if exists elsewhere on page)
+                const code = document.getElementById('doc-code')?.textContent || 'QA-FM-FORM';
+                const issue = document.getElementById('doc-issue-no')?.textContent || '01';
+                const review = document.getElementById('doc-review-no')?.textContent || '00';
+                document.getElementById('ph-form-code').textContent = code;
+                document.getElementById('pf-form-code').textContent = code;
+                document.getElementById('ph-issue').textContent = issue;
+                document.getElementById('pf-issue').textContent = issue;
+                document.getElementById('ph-review').textContent = review;
+                document.getElementById('pf-review').textContent = review;
+            }
+
+            if (printBtn) {
+                printBtn.addEventListener('click', function () {
+                    syncPrintMeta();
+                    window.print();
+                });
+            }
+
+            // Keyboard shortcut: Ctrl/Cmd + P
+            document.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
+                    e.preventDefault();
+                    syncPrintMeta();
+                    window.print();
+                }
+            });
+
+            // Ensure metadata is synced when native print is triggered
+            window.addEventListener('beforeprint', syncPrintMeta);
+        });
+    </script>
+</body>
+
+</html>
