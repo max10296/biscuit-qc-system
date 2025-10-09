@@ -26,8 +26,12 @@
 
   async function createReport(payload){
     try{
-      const res = await fetch('tables/reports',{
-        method:'POST', headers:{'Content-Type':'application/json'},
+      if (window.apiClient && typeof window.apiClient.createReport === 'function') {
+        return await window.apiClient.createReport(payload);
+      }
+      const res = await fetch('/api/reports',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
         body: JSON.stringify(payload)
       });
       if(!res.ok){
@@ -66,7 +70,7 @@
       const defects_count = null; // optional
       const status = 'submitted'; // default; could be changed by app logic
       const data = buildSnapshot();
-      const payload = { ...basics, status, score, defects_count, notes: data.notes, data: JSON.stringify(data) };
+      const payload = { ...basics, status, score, defects_count, notes: data.notes, form_data: data };
       const rec = await createReport(payload);
       notify('Saved to Reports');
       // Navigate with context
@@ -83,9 +87,14 @@
     const id = u.searchParams.get('reportId');
     if(!id) return;
     try{
-      const res = await fetch(`tables/reports/${id}`);
-      if(!res.ok) throw new Error('Report not found');
-      const rec = await res.json();
+      let rec;
+      if (window.apiClient && typeof window.apiClient.getReport === 'function') {
+        rec = await window.apiClient.getReport(id);
+      } else {
+        const res = await fetch(`/api/reports/${id}`);
+        if(!res.ok) throw new Error('Report not found');
+        rec = await res.json();
+      }
       await applyBasics(rec);
       await applySnapshot(rec);
       notify('Report loaded');
@@ -115,7 +124,15 @@
 
   async function applySnapshot(rec){
     let snap = null;
-    try{ snap = rec.data ? JSON.parse(rec.data) : null; }catch(_){ snap=null; }
+    try{
+      if (rec.form_data) {
+        snap = typeof rec.form_data === 'string' ? JSON.parse(rec.form_data) : rec.form_data;
+      } else if (rec.data) {
+        snap = typeof rec.data === 'string' ? JSON.parse(rec.data) : rec.data;
+      } else {
+        snap = null;
+      }
+    }catch(_){ snap=null; }
     if(!snap) return;
     // Product notes display area
     const disp = document.getElementById('product-notes-display');
