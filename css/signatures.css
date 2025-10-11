@@ -1,0 +1,14 @@
+/* Signatures print and on-screen styles */
+#signature-block-container { margin-top: 1rem; }
+.signature-block { padding-top: .5rem; }
+.signature-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 1rem; align-items:end; }
+.signature-cell { text-align:center; }
+.signature-line { border-bottom: 2px solid #111827; height: 42px; margin-bottom: 6px; }
+.signature-meta { display:flex; justify-content:center; gap:.75rem; font-size: .75rem; color:#4b5563; }
+.signature-role { font-weight:600; font-size:.8rem; color:#374151; margin-top:.25rem; }
+
+@media print {
+  #signature-block-container { break-inside: avoid; margin-top: 1rem; }
+  .signature-line { border-bottom: 1.5pt solid #000; height: 36pt; }
+  .signature-meta { color:#000 !important; }
+}

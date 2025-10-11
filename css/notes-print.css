@@ -1,0 +1,27 @@
+/* Print overrides to force notes visibility and styling in exported/printed PDFs */
+@media print {
+  /* Always show notes below tables */
+  .table-notes-block { 
+    display: block !important; 
+    page-break-inside: avoid; 
+    break-inside: avoid; 
+    margin-top: 0.25rem; 
+    margin-bottom: 0.5rem;
+  }
+  .table-notes-block.hidden { display: block !important; }
+
+  /* Always show general product notes if present */
+  #product-notes-display-container { 
+    display: block !important; 
+    page-break-inside: avoid; 
+    break-inside: avoid;
+  }
+
+  /* Preserve background colors and borders for notes */
+  .table-notes-block,
+  #product-notes-display-container {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important; /* legacy */
+  }
+}

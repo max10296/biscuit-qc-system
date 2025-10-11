@@ -1,0 +1,49 @@
+/* Notes block shown below every table */
+.table-notes-block { 
+  margin: 0.5rem 0 1rem; 
+  background: #fffbeb; /* amber-50 */
+  border: 1px solid #fef3c7; /* amber-100 */
+  border-left: 4px solid #f59e0b; /* amber-500 */
+  padding: 0.5rem; 
+  border-radius: 0.375rem; 
+}
+.table-notes-block.hidden { display: none !important; }
+.table-notes-block header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-weight: 600;
+  color: #92400e; /* amber-800 */
+  margin-bottom: .25rem;
+  font-size: 0.875rem;
+}
+.table-notes-textarea {
+  width: 100%;
+  min-height: 60px;
+  resize: vertical;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 0.375rem;
+  padding: .5rem .625rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  background: #fff;
+}
+.table-notes-hint { 
+  margin-top: .25rem; 
+  font-size: .75rem; 
+  color: #6b7280; /* gray-500 */
+}
+
+@media print {
+  .table-notes-block { 
+    background: #fff; 
+    border-color: #d1d5db; /* gray-300 */
+    -webkit-print-color-adjust: exact; 
+    print-color-adjust: exact; 
+  }
+  .table-notes-textarea {
+    border: 1px solid #d1d5db;
+    min-height: 48px;
+  }
+  /* Remove box-shadows/rounded if your print layout needs tighter spacing */
+}
